@@ -156,8 +156,43 @@ const forgotPassowrdService = async (email: string) => {
     name: user.name,
     resetLink: resetPasswordLink,
   });
-  await sendEmail(user.email, "Action nedded! Reset your password", emailTemplate);
+  await sendEmail(
+    user.email,
+    'Action nedded! Reset your password',
+    emailTemplate,
+  );
   return null;
+};
+
+// Reset password
+const resetPasswordServices = async (token: string, password: string) => {
+  if (!token) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'You are not Authorized');
+  }
+
+  const decoded = jwt.verify(
+    token,
+    config.JWT_RESETPASSWORD_TOKEN_SECRET as string,
+  ) as JwtPayload;
+  const { email } = decoded;
+  const user = await User.isUserExsitsByUserEmail(email);
+  if (!user) {
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      'Invalid request, user not found!',
+    );
+  }
+
+  // // hased password
+  // const hashedPassword = await bcrypt.hash(password, 10);
+
+  // Update the user's password in DB
+  await User.findOneAndUpdate(
+    { email },
+    {
+      password: password,
+    },
+  );
 };
 
 const userService = {
@@ -166,6 +201,7 @@ const userService = {
   getSingleUserFromDBService,
   refreshTokenService,
   forgotPassowrdService,
+  resetPasswordServices,
 };
 
 export default userService;

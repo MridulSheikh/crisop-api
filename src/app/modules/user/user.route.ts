@@ -1,7 +1,7 @@
 import  express from "express";
 import userController from "./user.controller";
 import validateRequest from "../../middlewares/validateRequest";
-import { CreateUserValidationSchema, forgetPasswordValidationSchema, LoginUserValidationSchema, refreshTokenValidationSchema } from "./user.validation";
+import { CreateUserValidationSchema, forgetPasswordValidationSchema, LoginUserValidationSchema, refreshTokenValidationSchema, resetPasswordValidationSchema } from "./user.validation";
 import auth from "../../middlewares/auth";
 import { UserRole } from "./user.interface";
 
@@ -15,6 +15,8 @@ Router.route("/refresh-token")
 .post(validateRequest(refreshTokenValidationSchema), userController.refreshTokenController)
 Router.route("/forget-password")
 .post(validateRequest(forgetPasswordValidationSchema), userController.forgetPasswordController)
+Router.route("/reset-password")
+.post(validateRequest(resetPasswordValidationSchema),userController.resetPasswordContorller)
 
 Router.route("/:email")
 .get(auth(UserRole.admin,UserRole.user, UserRole.manager),userController.getSingleUserFromDBController)

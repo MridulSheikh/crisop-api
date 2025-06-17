@@ -9,6 +9,7 @@ import jwt, { JwtPayload } from 'jsonwebtoken';
 import path from 'path';
 import ejs from 'ejs';
 import sendEmail from '../../helpers/email';
+import bcrypt from 'bcrypt';
 
 // create user into database
 const createUserIntoDatabaseService = async (payload: IUser) => {
@@ -139,8 +140,8 @@ const forgotPassowrdService = async (email: string) => {
   // create forgotPassword token
   const forgotPasswordToken = createToken(
     jwtPayload,
-    config.REFRESH_SECRET as string,
-    config.REFRESH_EXPIREIN as string,
+    config.JWT_RESETPASSWORD_TOKEN_SECRET as string,
+    config.JWT_RESETPASSWORD_TOKEN_EXPIREIN as string,
   );
 
   // make reset password link
@@ -174,8 +175,12 @@ const resetPasswordServices = async (token: string, password: string) => {
     token,
     config.JWT_RESETPASSWORD_TOKEN_SECRET as string,
   ) as JwtPayload;
+
   const { email } = decoded;
+
   const user = await User.isUserExsitsByUserEmail(email);
+
+  // if user not exist
   if (!user) {
     throw new AppError(
       httpStatus.NOT_FOUND,
@@ -184,13 +189,13 @@ const resetPasswordServices = async (token: string, password: string) => {
   }
 
   // // hased password
-  // const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await bcrypt.hash(password, 10);
 
   // Update the user's password in DB
   await User.findOneAndUpdate(
     { email },
     {
-      password: password,
+      password: hashedPassword,
     },
   );
 };

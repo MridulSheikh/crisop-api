@@ -63,7 +63,7 @@ const forgetPasswordController = catchAsync(async(req: Request, res: Response) =
       const result = await userService.forgotPassowrdService(email);
       sendResponse(res,{
         success: true,
-        message: "Successfully generated reset password url generated",
+        message: "We are send reset password link, please check your email",
         data: result,
         statusCode: httpStatus.OK
       })

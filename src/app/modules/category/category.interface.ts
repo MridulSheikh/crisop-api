@@ -1,4 +1,5 @@
 export interface ICategory {
       name: string;
-      descriptiopn: string;
+      description: string;
+      isDeleted: boolean;
 }

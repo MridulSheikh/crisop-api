@@ -18,9 +18,12 @@ const warehouseSchema = new Schema<IWarehouse>(
     },
     capacity: {
       type: Number,
-      required: true,
-      min: 0,
+      default: 0
     },
+    isDeleted: {
+      type: Boolean,
+      default: false
+    }
   },
   {
     timestamps: true,

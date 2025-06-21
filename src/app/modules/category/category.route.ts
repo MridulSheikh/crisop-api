@@ -2,7 +2,7 @@ import express from "express"
 import auth from "../../middlewares/auth"
 import validateRequest from "../../middlewares/validateRequest"
 import categoryValidation from "./category.validation"
-import { createCategoryIntoDatabseController, deleteOneCategoryIntoDB, getAllCategoriesFromDBController, updateOneCateogryIntoDBController } from "./category.contorller"
+import { createCategoryIntoDatabseController, deleteOneCategoryController, getAllCategoriesFromDBController, getSingleCategoryFromDbController, updateOneCateogryIntoDBController } from "./category.contorller"
 
 const router = express.Router()
 
@@ -12,6 +12,7 @@ router.route("/")
 
 router.route("/:id")
 .patch(auth("admin", "manager"), validateRequest(categoryValidation.updateCategoryValidationSchema), updateOneCateogryIntoDBController)
-.delete(auth("admin", "manager"), deleteOneCategoryIntoDB)
+.delete(auth("admin", "manager"), deleteOneCategoryController)
+.get(auth('admin', 'manager'), getSingleCategoryFromDbController)
 
 export default router;

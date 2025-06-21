@@ -2,8 +2,9 @@ import { Request, Response } from 'express';
 import catchAsync from '../../utils/catchAsync';
 import {
   createCategoryIntoDBService,
-  deleCateogryFromDBService,
+  deleCateogryService,
   getAllCategoryFromDBService,
+  getSingleCategoryFromDbService,
   updateOneCateogryIntoDBService,
 } from './category.service';
 import sendResponse from '../../utils/sendResponse';
@@ -27,12 +28,24 @@ const getAllCategoriesFromDBController = catchAsync(
     const result = await getAllCategoryFromDBService();
     sendResponse(res, {
       success: true,
-      message: 'Successfully retrived category',
+      message: 'Successfully retrived categories',
       data: result,
       statusCode: httpStatus.OK,
     });
   },
 );
+
+const getSingleCategoryFromDbController = catchAsync(
+  async(req: Request, res: Response)=>{
+    const result = await getSingleCategoryFromDbService(req.params.id);
+    sendResponse(res, {
+      success: true,
+      message: 'Successfully retrived category',
+      data: result,
+      statusCode: httpStatus.OK,
+    });
+  }
+)
 
 const updateOneCateogryIntoDBController = catchAsync(
   async (req: Request, res: Response) => {
@@ -50,8 +63,8 @@ const updateOneCateogryIntoDBController = catchAsync(
 );
 
 // delete category from db controller
-const deleteOneCategoryIntoDB = catchAsync(async(req: Request, res: Response)=>{
-   const result = await deleCateogryFromDBService(req.params.id);
+const deleteOneCategoryController = catchAsync(async(req: Request, res: Response)=>{
+   const result = await deleCateogryService(req.params.id);
    sendResponse(res, {
       success: true,
       message: 'Successfully removed category',
@@ -64,5 +77,6 @@ export {
   createCategoryIntoDatabseController,
   getAllCategoriesFromDBController,
   updateOneCateogryIntoDBController,
-  deleteOneCategoryIntoDB
+  deleteOneCategoryController,
+  getSingleCategoryFromDbController
 };

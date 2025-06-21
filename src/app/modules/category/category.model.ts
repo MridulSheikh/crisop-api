@@ -3,7 +3,7 @@ import { ICategory } from './category.interface';
 
 export interface ICategoryDocument extends ICategory, Document {}
 
-const CategorySchema: Schema = new Schema(
+const CategorySchema: Schema = new Schema<ICategoryDocument>(
   {
     name: {
       type: String,
@@ -15,6 +15,10 @@ const CategorySchema: Schema = new Schema(
       type: String,
       required: true,
       trim: true
+    },
+    isDeleted:{
+      type: Boolean,
+      default: false,
     }
   },
   {

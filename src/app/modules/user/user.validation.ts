@@ -40,6 +40,14 @@ const forgetPasswordValidationSchema = z.object({
 const resetPasswordValidationSchema = z.object({
   body: z.object({
     password: z.string({ required_error: 'password is require' }),
+    token: z.string({required_error: "token is required!"})
+  })
+})
+
+const oAuthValidationSchema = z.object({
+  body: z.object({
+    accessToken: z.string({required_error: "accessToken is required"}),
+    method: z.enum(["google","facebook"],{required_error: "method is required"})
   })
 })
 
@@ -49,5 +57,6 @@ export {
   UpdateUserValidatonSchema,
   LoginUserValidationSchema,
   refreshTokenValidationSchema,
-  resetPasswordValidationSchema
+  resetPasswordValidationSchema,
+  oAuthValidationSchema
 };

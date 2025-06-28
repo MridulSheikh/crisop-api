@@ -20,3 +20,10 @@ export const createOrderSchema = z.object({
     isCancel: z.boolean().default(false),
   })
 });
+
+
+export const toggleStatusValidationSchema = z.object({
+  body: z.object({
+     status: z.enum(['pending', 'packing', 'shipped', 'delivered']).default("pending"),
+  })
+})

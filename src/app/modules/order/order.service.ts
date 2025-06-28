@@ -46,3 +46,10 @@ export const toggleOrderStatus = async (_id: string, status: string) => {
 
        return result;
 };
+
+
+// get all order from db
+
+export const getAllOrderFromDB = async () => {
+       
+}

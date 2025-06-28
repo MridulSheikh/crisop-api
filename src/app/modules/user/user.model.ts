@@ -38,6 +38,14 @@ const userSchema = new Schema<IUser, UserModel>(
   }
 );
 
+const expireResetPasswordLink = new Schema({
+      token: {
+        type: String,
+        require: true,
+        unique: true,
+      }
+})
+
 userSchema.pre('save', async function (next) {
   // eslint-disable-next-line @typescript-eslint/no-this-alias
   const user = this;
@@ -67,4 +75,5 @@ userSchema.statics.isPasswordMatch = async function (
 };
 
 const User = model<IUser, UserModel>('User', userSchema);
+export const ExpireResetPasswordLink = model("ExpireResetPasswordLink", expireResetPasswordLink)
 export default User;

@@ -1,7 +1,7 @@
 import httpStatus from 'http-status';
 import AppError from '../../errors/AppError';
 import { IUser } from './user.interface';
-import User from './user.model';
+import User, { ExpireResetPasswordLink } from './user.model';
 import config from '../../config';
 import { createToken } from './user.utils';
 import mongoose from 'mongoose';
@@ -10,6 +10,8 @@ import path from 'path';
 import ejs from 'ejs';
 import sendEmail from '../../helpers/email';
 import bcrypt from 'bcrypt';
+import { fetchGoogleUserInfo } from '../../utils/fetchGoogleUserInfo';
+import { fetchFacebookUserInfo } from '../../utils/fechFacebookUserInfo';
 
 // create user into database
 const createUserIntoDatabaseService = async (payload: IUser) => {
@@ -29,12 +31,15 @@ const loginUserService = async (payload: {
 }) => {
   // is user exists on databse
   const isUserExists = await User.isUserExsitsByUserEmail(payload.email);
+  if (!isUserExists) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'Wrong credential input');
+  }
   // is password matched
   const isPasswordMatched = await User.isPasswordMatch(
     payload.password,
     isUserExists?.password,
   );
-  if (!isUserExists || !isPasswordMatched) {
+  if (!isPasswordMatched) {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Wrong credential input');
   }
 
@@ -42,6 +47,7 @@ const loginUserService = async (payload: {
     _id: isUserExists._id as mongoose.Types.ObjectId,
     role: isUserExists.role,
     email: isUserExists.email,
+    name: isUserExists.name,
   };
 
   // create token and sent to the client
@@ -145,7 +151,7 @@ const forgotPassowrdService = async (email: string) => {
   );
 
   // make reset password link
-  const resetPasswordLink = `${config.NODE_ENV === 'development' ? 'https://localhost:3000' : config.CLIENT_URL}/reset-password?token=${forgotPasswordToken}`;
+  const resetPasswordLink = `${config.NODE_ENV === 'development' ? 'http://localhost:3000' : config.CLIENT_URL}/reset-password?token=${forgotPasswordToken}`;
 
   const templatePath = path.join(
     // eslint-disable-next-line no-undef
@@ -188,6 +194,16 @@ const resetPasswordServices = async (token: string, password: string) => {
     );
   }
 
+  // if resetlink not expire
+  const ifLinkExpire = await ExpireResetPasswordLink.findOne({token: token});
+
+  if(ifLinkExpire){
+     throw new AppError(
+      httpStatus.NOT_FOUND,
+      'Invalid request, link already expire',
+    );
+  }
+
   // // hased password
   const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -198,6 +214,65 @@ const resetPasswordServices = async (token: string, password: string) => {
       password: hashedPassword,
     },
   );
+
+  // make jwt expire after one time use
+  await ExpireResetPasswordLink.create({token});
+};
+
+// Oauth login
+const handleOAuthService = async (token: string, method: string) => {
+  let oauthUser;
+
+  if (method === 'google') {
+    oauthUser = await fetchGoogleUserInfo(token);
+  }
+
+  if (method === 'facebook') {
+    oauthUser = await fetchFacebookUserInfo(token);
+  }
+  if (!oauthUser?.email) {
+    throw new AppError(
+      httpStatus.UNAUTHORIZED,
+      'There was a problem with this Google account. Please try another.',
+    );
+  }
+
+  let user = await User.isUserExsitsByUserEmail(oauthUser.email as string);
+
+  // if user does not exist database
+  if (!user) {
+    user = await User.create({
+      name: oauthUser.name,
+      email: oauthUser.email,
+      image: oauthUser.image,
+    });
+  }
+
+  const jwtPayload = {
+    _id: user._id as mongoose.Types.ObjectId,
+    role: user.role,
+    email: user.email,
+    name: user.name,
+  };
+
+  // generate jwt token
+  const accessToken = createToken(
+    jwtPayload,
+    config.JWT_ACCESS_SECRET as string,
+    config.JWT_ACCESS_EXPIRES_ID as string,
+  );
+
+  // create refresh token
+  const refreshToken = createToken(
+    jwtPayload,
+    config.REFRESH_SECRET as string,
+    config.REFRESH_EXPIREIN as string,
+  );
+
+  return {
+    accessToken,
+    refreshToken,
+  };
 };
 
 const userService = {
@@ -207,6 +282,7 @@ const userService = {
   refreshTokenService,
   forgotPassowrdService,
   resetPasswordServices,
+  handleOAuthService,
 };
 
 export default userService;

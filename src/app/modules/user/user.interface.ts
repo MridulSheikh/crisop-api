@@ -13,6 +13,7 @@ export interface IUser {
   password: string;
   image: string;
   role: UserRole;
+  isVerified: boolean;
 }
 
 

@@ -22,7 +22,6 @@ router
     createProductController
   )
   .get(
-    auth("admin", "manager", "user"), // Allow users to view products
     getAllProductsController
   );
 

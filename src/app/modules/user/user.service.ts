@@ -1,7 +1,10 @@
 import httpStatus from 'http-status';
 import AppError from '../../errors/AppError';
-import { IUser } from './user.interface';
-import User, { ExpireResetPasswordLink } from './user.model';
+import { IUser, UserRole } from './user.interface';
+import User, {
+  ExpireResetPasswordLink,
+  UserEmailVerificationCenter,
+} from './user.model';
 import config from '../../config';
 import { createToken } from './user.utils';
 import mongoose from 'mongoose';
@@ -12,6 +15,7 @@ import sendEmail from '../../helpers/email';
 import bcrypt from 'bcrypt';
 import { fetchGoogleUserInfo } from '../../utils/fetchGoogleUserInfo';
 import { fetchFacebookUserInfo } from '../../utils/fechFacebookUserInfo';
+import { generateVerificationCode } from '../../utils/generateVerificationCode';
 
 // create user into database
 const createUserIntoDatabaseService = async (payload: IUser) => {
@@ -20,8 +24,10 @@ const createUserIntoDatabaseService = async (payload: IUser) => {
   if (isUserExists) {
     throw new AppError(httpStatus.CONFLICT, 'This email already taken');
   }
-  const result = await User.create(payload);
-  return result;
+  const newUser = await User.create(payload);
+  // send verification mail
+  await createVerificationCodeService(newUser.email);
+  return newUser;
 };
 
 // login user service
@@ -41,6 +47,15 @@ const loginUserService = async (payload: {
   );
   if (!isPasswordMatched) {
     throw new AppError(httpStatus.UNAUTHORIZED, 'Wrong credential input');
+  }
+
+  // check is user verified or not
+  if (!isUserExists.isVerified) {
+    await createVerificationCodeService(payload.email);
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      'You are not verified, please check your email!',
+    );
   }
 
   const jwtPayload = {
@@ -195,10 +210,10 @@ const resetPasswordServices = async (token: string, password: string) => {
   }
 
   // if resetlink not expire
-  const ifLinkExpire = await ExpireResetPasswordLink.findOne({token: token});
+  const ifLinkExpire = await ExpireResetPasswordLink.findOne({ token: token });
 
-  if(ifLinkExpire){
-     throw new AppError(
+  if (ifLinkExpire) {
+    throw new AppError(
       httpStatus.NOT_FOUND,
       'Invalid request, link already expire',
     );
@@ -216,7 +231,7 @@ const resetPasswordServices = async (token: string, password: string) => {
   );
 
   // make jwt expire after one time use
-  await ExpireResetPasswordLink.create({token});
+  await ExpireResetPasswordLink.create({ token });
 };
 
 // Oauth login
@@ -245,7 +260,16 @@ const handleOAuthService = async (token: string, method: string) => {
       name: oauthUser.name,
       email: oauthUser.email,
       image: oauthUser.image,
+      isVerified: true,
     });
+  }
+
+  if (!user.isVerified) {
+    user = await User.findOneAndUpdate(
+      { email: user.email },
+      { isVerified: true },
+      { new: true, upsert: true },
+    );
   }
 
   const jwtPayload = {
@@ -275,7 +299,133 @@ const handleOAuthService = async (token: string, method: string) => {
   };
 };
 
+// create verification code service
+const createVerificationCodeService = async (email: string) => {
+  // check is user exist
+  const user = await User.isUserExsitsByUserEmail(email);
+
+  if (!user) {
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      'Invalid request, user not found!',
+    );
+  }
+
+  const code = generateVerificationCode();
+  const expireIn = new Date(Date.now() + 3 * 60 * 1000);
+
+  // save and update verification code into DB
+  await UserEmailVerificationCenter.findOneAndUpdate(
+    { email },
+    {
+      email,
+      code,
+      expireIn,
+    },
+    { upsert: true, new: true },
+  );
+  // send code via email
+  const templatePath = path.join(
+    // eslint-disable-next-line no-undef
+    __dirname,
+    '../../utils/templates/varification/email-verification.ejs',
+  );
+
+  const emailTemplate = await ejs.renderFile(templatePath, {
+    name: user.name,
+    code: code,
+  });
+  await sendEmail(
+    user.email,
+    'Action nedded! verify your email address',
+    emailTemplate,
+  );
+
+  return null;
+};
+
+// verify email service
+const verifyEmailSerivce = async (email: string, code: string) => {
+  const verificationData = await UserEmailVerificationCenter.findOne({ email });
+
+  // if not found
+  if (!verificationData) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Code didn't matched");
+  }
+
+  // check time
+  if (verificationData.expireIn) {
+    const expiryTime = new Date(verificationData.expireIn);
+    const currentTime = new Date();
+    if (currentTime > expiryTime) {
+      throw new AppError(httpStatus.BAD_REQUEST, 'Time expire');
+    }
+  }
+
+  // check code match or not
+  if (verificationData.code !== code) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Code didn't matched");
+  }
+
+  // make verified user
+  const verified = await User.findOneAndUpdate(
+    { email },
+    { isVerified: true },
+    { upsert: true, new: true },
+  );
+
+  const jwtPayload = {
+    _id: verified._id as mongoose.Types.ObjectId,
+    role: verified.role,
+    email: verified.email,
+    name: verified.name,
+  };
+
+  // create token and sent to the client
+
+  const accessToken = createToken(
+    jwtPayload,
+    config.JWT_ACCESS_SECRET as string,
+    config.JWT_ACCESS_EXPIRES_ID as string,
+  );
+
+  // create refresh token
+  const refreshToken = createToken(
+    jwtPayload,
+    config.REFRESH_SECRET as string,
+    config.REFRESH_EXPIREIN as string,
+  );
+
+  return {
+    accessToken,
+    refreshToken,
+  };
+};
+
+
+// change user role
+const changeUserRoleServices = async (email: string, role: UserRole) =>{
+     const result = await User.findOneAndUpdate({email},{role: role},{new: true, upsert: true});
+     return result;
+}
+
+// get all user service 
+const getAlluserFromDB = async (query: Record<string, unknown>) =>{
+  const mongoQuery: Record <string, unknown> = {};
+
+  // handle role=admin,manager
+  if(query.role && typeof query.role === 'string'){
+    mongoQuery.role = {$in: query.role.split(",")};
+  }
+
+  // final output result
+  const result = await User.find(mongoQuery);
+
+  return result;
+}
+
 const userService = {
+  changeUserRoleServices,
   createUserIntoDatabaseService,
   loginUserService,
   getSingleUserFromDBService,
@@ -283,6 +433,9 @@ const userService = {
   forgotPassowrdService,
   resetPasswordServices,
   handleOAuthService,
+  createVerificationCodeService,
+  verifyEmailSerivce,
+  getAlluserFromDB
 };
 
 export default userService;

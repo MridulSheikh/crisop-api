@@ -32,28 +32,44 @@ const userSchema = new Schema<IUser, UserModel>(
       enum: Object.values(UserRole),
       default: UserRole.user,
     },
+    isVerified: {
+      type: Boolean,
+      default: false
+    }
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 const expireResetPasswordLink = new Schema({
-      token: {
-        type: String,
-        require: true,
-        unique: true,
-      }
-})
+  token: {
+    type: String,
+    require: true,
+    unique: true,
+  },
+});
+
+const userEmailVerificationCenter = new Schema({
+  email: {
+    type: String,
+    require: true,
+  },
+  code: {
+    type: String,
+    require: true,
+  },
+  expireIn: {
+    type: Date,
+    require: true,
+  }
+});
 
 userSchema.pre('save', async function (next) {
   // eslint-disable-next-line @typescript-eslint/no-this-alias
   const user = this;
 
-  user.password = await bcrypt.hash(
-    user.password,
-    Number(config.BCRYPT_SALT),
-  );
+  user.password = await bcrypt.hash(user.password, Number(config.BCRYPT_SALT));
   next();
 });
 
@@ -75,5 +91,9 @@ userSchema.statics.isPasswordMatch = async function (
 };
 
 const User = model<IUser, UserModel>('User', userSchema);
-export const ExpireResetPasswordLink = model("ExpireResetPasswordLink", expireResetPasswordLink)
+export const ExpireResetPasswordLink = model(
+  'ExpireResetPasswordLink',
+  expireResetPasswordLink,
+);
+export const UserEmailVerificationCenter = model("userEmailVerificationCenter", userEmailVerificationCenter)
 export default User;

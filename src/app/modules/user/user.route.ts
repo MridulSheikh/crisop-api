@@ -19,8 +19,18 @@ Router.route("/reset-password")
 .post(validateRequest(resetPasswordValidationSchema),userController.resetPasswordContorller)
 Router.route("/oauth")
 .post(validateRequest(oAuthValidationSchema), userController.handleOAuthController)
+Router.route("/change-role")
+.post(auth("admin"), userController.changeUserRoleController)
 
+// Router.route("/email-verification/:email")
+// .post(userController.createVerificationCodeController)
+Router.route('/verify').post( userController.verfiyCodeController)
+
+Router.route("/")
+.get(userController.getAllUserFromDB)
 Router.route("/:email")
 .get(auth(UserRole.admin,UserRole.user, UserRole.manager),userController.getSingleUserFromDBController)
+
+
 
 export const UserRoute = Router;

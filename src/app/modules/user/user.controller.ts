@@ -112,6 +112,55 @@ const handleOAuthController = catchAsync(
   },
 );
 
+// create verification code service
+const createVerificationCodeController = catchAsync(async(req: Request, res:Response)=>{
+      await userService.createVerificationCodeService(req.params.email)
+      sendResponse(res, {
+      success: true,
+      message: 'successfully create code',
+      data: null,
+      statusCode: httpStatus.OK,
+    });
+})
+
+// verify code
+const verfiyCodeController = catchAsync(async(req: Request, res: Response)=>{
+    const {email, code} = req.body;
+    const result = await userService.verifyEmailSerivce(email, code);
+    sendResponse(res,{
+      success: true,
+      message: 'user successfully verified',
+      data: result,
+      statusCode: httpStatus.OK
+    })
+})
+
+// change user role controller
+const changeUserRoleController = catchAsync(async(req: Request, res: Response)=>{
+  const {email, role} = req.body;
+  const result = await userService.changeUserRoleServices(email, role);
+
+  sendResponse(res,{
+    success: true,
+    message: "user role successfully changed",
+    data: result,
+    statusCode: httpStatus.OK
+  })
+})
+
+// get all user controller
+const getAllUserFromDB = catchAsync(async(req: Request, res: Response)=>{
+     const query = req.query;
+     const resData = await userService.getAlluserFromDB(query);
+
+     sendResponse(res, {
+      success: true,
+      message: "successfully retrived user",
+      data: resData,
+      statusCode: httpStatus.OK
+     })
+})
+
 const userController = {
   forgetPasswordController,
   createUserIntoDatabseController,
@@ -120,6 +169,10 @@ const userController = {
   refreshTokenController,
   resetPasswordContorller,
   handleOAuthController,
+  createVerificationCodeController,
+  verfiyCodeController,
+  changeUserRoleController,
+  getAllUserFromDB
 };
 
 export default userController;

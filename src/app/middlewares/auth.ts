@@ -32,7 +32,7 @@ const auth = (...requiredRoles: TUserRole[]) => {
     const { role, email } = decoded;
 
     if (requiredRoles && !requiredRoles.includes(role)) {
-      throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authrized hi!');
+      throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authrized !');
     }
 
     // checking if the user is exists

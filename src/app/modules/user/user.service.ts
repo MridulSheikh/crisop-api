@@ -84,6 +84,7 @@ const loginUserService = async (payload: {
   return {
     accessToken,
     refreshToken,
+    role: isUserExists.role
   };
 };
 
@@ -131,14 +132,14 @@ const refreshTokenService = async (token: string) => {
   };
 
   // create refresh token
-  const refreshToken = createToken(
+  const accessToken = createToken(
     jwtPayload,
-    config.REFRESH_SECRET as string,
-    config.REFRESH_EXPIREIN as string,
+    config.JWT_ACCESS_SECRET as string,
+    config.JWT_ACCESS_SECRET as string,
   );
 
   return {
-    refreshToken,
+    accessToken,
   };
 };
 

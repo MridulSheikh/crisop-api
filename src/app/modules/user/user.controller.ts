@@ -20,11 +20,21 @@ const createUserIntoDatabseController = catchAsync(
 
 const loginUserController = catchAsync(async (req: Request, res: Response) => {
   const data = req.body;
-  const { accessToken, refreshToken } =
+  const { accessToken, refreshToken, role } =
     await userService.loginUserService(data);
 
   res.cookie('refreshToken', refreshToken, {
-    secure: config.NODE_ENV === 'production' ? true : false,
+    secure: config.NODE_ENV === 'production' ,
+    httpOnly: true,
+  });
+
+  res.cookie('role', role, {
+    secure: config.NODE_ENV === 'production',
+    httpOnly: false,
+  });
+
+  res.cookie('accessToken', accessToken, {
+    secure: config.NODE_ENV === 'production',
     httpOnly: true,
   });
   sendResponse(res, {
@@ -95,8 +105,10 @@ const resetPasswordContorller = catchAsync(
 const handleOAuthController = catchAsync(
   async (req: Request, res: Response) => {
     const { accessToken: token, method } = req.body;
-    const { accessToken, refreshToken } =
-      await userService.handleOAuthService(token, method);
+    const { accessToken, refreshToken } = await userService.handleOAuthService(
+      token,
+      method,
+    );
     res.cookie('refreshToken', refreshToken, {
       secure: config.NODE_ENV === 'production' ? true : false,
       httpOnly: true,
@@ -113,53 +125,57 @@ const handleOAuthController = catchAsync(
 );
 
 // create verification code service
-const createVerificationCodeController = catchAsync(async(req: Request, res:Response)=>{
-      await userService.createVerificationCodeService(req.params.email)
-      sendResponse(res, {
+const createVerificationCodeController = catchAsync(
+  async (req: Request, res: Response) => {
+    await userService.createVerificationCodeService(req.params.email);
+    sendResponse(res, {
       success: true,
       message: 'successfully create code',
       data: null,
       statusCode: httpStatus.OK,
     });
-})
+  },
+);
 
 // verify code
-const verfiyCodeController = catchAsync(async(req: Request, res: Response)=>{
-    const {email, code} = req.body;
-    const result = await userService.verifyEmailSerivce(email, code);
-    sendResponse(res,{
-      success: true,
-      message: 'user successfully verified',
-      data: result,
-      statusCode: httpStatus.OK
-    })
-})
+const verfiyCodeController = catchAsync(async (req: Request, res: Response) => {
+  const { email, code } = req.body;
+  const result = await userService.verifyEmailSerivce(email, code);
+  sendResponse(res, {
+    success: true,
+    message: 'user successfully verified',
+    data: result,
+    statusCode: httpStatus.OK,
+  });
+});
 
 // change user role controller
-const changeUserRoleController = catchAsync(async(req: Request, res: Response)=>{
-  const {email, role} = req.body;
-  const result = await userService.changeUserRoleServices(email, role);
+const changeUserRoleController = catchAsync(
+  async (req: Request, res: Response) => {
+    const { email, role } = req.body;
+    const result = await userService.changeUserRoleServices(email, role);
 
-  sendResponse(res,{
-    success: true,
-    message: "user role successfully changed",
-    data: result,
-    statusCode: httpStatus.OK
-  })
-})
+    sendResponse(res, {
+      success: true,
+      message: 'user role successfully changed',
+      data: result,
+      statusCode: httpStatus.OK,
+    });
+  },
+);
 
 // get all user controller
-const getAllUserFromDB = catchAsync(async(req: Request, res: Response)=>{
-     const query = req.query;
-     const resData = await userService.getAlluserFromDB(query);
+const getAllUserFromDB = catchAsync(async (req: Request, res: Response) => {
+  const query = req.query;
+  const resData = await userService.getAlluserFromDB(query);
 
-     sendResponse(res, {
-      success: true,
-      message: "successfully retrived user",
-      data: resData,
-      statusCode: httpStatus.OK
-     })
-})
+  sendResponse(res, {
+    success: true,
+    message: 'successfully retrived user',
+    data: resData,
+    statusCode: httpStatus.OK,
+  });
+});
 
 const userController = {
   forgetPasswordController,
@@ -172,7 +188,7 @@ const userController = {
   createVerificationCodeController,
   verfiyCodeController,
   changeUserRoleController,
-  getAllUserFromDB
+  getAllUserFromDB,
 };
 
 export default userController;

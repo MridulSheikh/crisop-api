@@ -27,7 +27,7 @@ Router.route("/change-role")
 Router.route('/verify').post( userController.verfiyCodeController)
 
 Router.route("/")
-.get(userController.getAllUserFromDB)
+.get(auth(UserRole.admin),userController.getAllUserFromDB)
 Router.route("/:email")
 .get(auth(UserRole.admin,UserRole.user, UserRole.manager),userController.getSingleUserFromDBController)
 

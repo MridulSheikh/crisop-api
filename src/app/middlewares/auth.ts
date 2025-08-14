@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable no-unused-vars */
 import { NextFunction, Request, Response } from 'express';
@@ -18,24 +19,30 @@ const auth = (...requiredRoles: TUserRole[]) => {
     const authHeader = req.headers.authorization;
     const token = authHeader?.split(" ")[1];
 
-    // if the token is sent from the client
     if (!token) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not Authorized');
     }
 
-    // checking if the give token is valid
-    const decoded = jwt.verify(
-      token,
-      config.JWT_ACCESS_SECRET as string,
-    ) as JwtPayload;
+    let decoded: JwtPayload;
+    try {
+      decoded = jwt.verify(
+        token,
+        config.JWT_ACCESS_SECRET as string,
+      ) as JwtPayload;
+    } catch (err: any) {
+      if (err.name === 'TokenExpiredError') {
+        // if token expired
+        throw new AppError(httpStatus.UNAUTHORIZED, 'TokenExpired');
+      }
+      throw new AppError(httpStatus.FORBIDDEN, 'Invalid token');
+    }
 
     const { role, email } = decoded;
 
     if (requiredRoles && !requiredRoles.includes(role)) {
-      throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authrized !');
+      throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
     }
 
-    // checking if the user is exists
     const user = await User.isUserExsitsByUserEmail(email);
     if (!user) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'User not found!');
@@ -45,5 +52,6 @@ const auth = (...requiredRoles: TUserRole[]) => {
     next();
   });
 };
+
 
 export default auth;

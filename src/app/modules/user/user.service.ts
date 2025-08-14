@@ -135,7 +135,7 @@ const refreshTokenService = async (token: string) => {
   const accessToken = createToken(
     jwtPayload,
     config.JWT_ACCESS_SECRET as string,
-    config.JWT_ACCESS_SECRET as string,
+    config.JWT_ACCESS_EXPIRES_ID as string,
   );
 
   return {

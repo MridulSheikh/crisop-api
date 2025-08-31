@@ -20,23 +20,15 @@ const createUserIntoDatabseController = catchAsync(
 
 const loginUserController = catchAsync(async (req: Request, res: Response) => {
   const data = req.body;
-  const { accessToken, refreshToken, role } =
+  const { accessToken, refreshToken } =
     await userService.loginUserService(data);
 
   res.cookie('refreshToken', refreshToken, {
     secure: config.NODE_ENV === 'production' ,
     httpOnly: true,
+    maxAge: 30*24*60*60*1000
   });
 
-  res.cookie('role', role, {
-    secure: config.NODE_ENV === 'production',
-    httpOnly: false,
-  });
-
-  res.cookie('accessToken', accessToken, {
-    secure: config.NODE_ENV === 'production',
-    httpOnly: true,
-  });
   sendResponse(res, {
     success: true,
     message: 'Successfully logged in user',
@@ -112,6 +104,7 @@ const handleOAuthController = catchAsync(
     res.cookie('refreshToken', refreshToken, {
       secure: config.NODE_ENV === 'production' ? true : false,
       httpOnly: true,
+      maxAge: 30*24*60*60*1000
     });
     sendResponse(res, {
       success: true,

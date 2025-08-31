@@ -17,7 +17,7 @@ export type TUserRole = keyof typeof UserRole;
 const auth = (...requiredRoles: TUserRole[]) => {
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
-    const token = authHeader?.split(" ")[1];
+    const token = authHeader?.split(' ')[1];
 
     if (!token) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'You are not Authorized');
@@ -39,19 +39,23 @@ const auth = (...requiredRoles: TUserRole[]) => {
 
     const { role, email } = decoded;
 
-    if (requiredRoles && !requiredRoles.includes(role)) {
-      throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
-    }
-
     const user = await User.isUserExsitsByUserEmail(email);
+
     if (!user) {
       throw new AppError(httpStatus.UNAUTHORIZED, 'User not found!');
+    }
+
+    if (user.needLogin) {
+      throw new AppError(httpStatus.UNAUTHORIZED, 'User login needed!');
+    }
+
+    if (requiredRoles && !requiredRoles.includes(role)) {
+      throw new AppError(httpStatus.UNAUTHORIZED, 'You are not authorized!');
     }
 
     req.user = decoded as JwtPayload;
     next();
   });
 };
-
 
 export default auth;

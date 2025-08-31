@@ -20,14 +20,14 @@ Router.route("/reset-password")
 Router.route("/oauth")
 .post(validateRequest(oAuthValidationSchema), userController.handleOAuthController)
 Router.route("/change-role")
-.post(auth("admin"), userController.changeUserRoleController)
+.post(auth(UserRole.admin,UserRole.super), userController.changeUserRoleController)
 
 // Router.route("/email-verification/:email")
 // .post(userController.createVerificationCodeController)
 Router.route('/verify').post( userController.verfiyCodeController)
 
 Router.route("/")
-.get(auth(UserRole.admin),userController.getAllUserFromDB)
+.get(auth(UserRole.admin, UserRole.super),userController.getAllUserFromDB)
 Router.route("/:email")
 .get(auth(UserRole.admin,UserRole.user, UserRole.manager),userController.getSingleUserFromDBController)
 

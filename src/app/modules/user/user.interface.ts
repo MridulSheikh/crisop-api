@@ -2,6 +2,7 @@ import mongoose, { Model } from "mongoose";
 
 /* eslint-disable no-unused-vars */
 export enum UserRole {
+  super= 'super',
   user = 'user',
   admin = 'admin',
   manager = 'manager',
@@ -14,6 +15,7 @@ export interface IUser {
   image: string;
   role: UserRole;
   isVerified: boolean;
+  needLogin: boolean;
 }
 
 

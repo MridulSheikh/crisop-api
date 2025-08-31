@@ -35,6 +35,10 @@ const userSchema = new Schema<IUser, UserModel>(
     isVerified: {
       type: Boolean,
       default: false
+    },
+    needLogin: {
+      type: Boolean,
+      default: false,
     }
   },
   {

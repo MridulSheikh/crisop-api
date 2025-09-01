@@ -157,6 +157,20 @@ const changeUserRoleController = catchAsync(
   },
 );
 
+// add team member
+const addTeamMemberController = catchAsync(
+  async(req: Request, res: Response) =>{
+      const {email, role}= req.body;
+      const result = await userService.AddTeamMemberServices(email, role);
+      sendResponse(res, {
+        success: true,
+        message: "Team member hasbeen added",
+        data: result,
+        statusCode: httpStatus.OK
+      })
+  }
+)
+
 // get all user controller
 const getAllUserFromDB = catchAsync(async (req: Request, res: Response) => {
   const query = req.query;
@@ -182,6 +196,7 @@ const userController = {
   verfiyCodeController,
   changeUserRoleController,
   getAllUserFromDB,
+  addTeamMemberController
 };
 
 export default userController;

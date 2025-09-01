@@ -21,6 +21,8 @@ Router.route("/oauth")
 .post(validateRequest(oAuthValidationSchema), userController.handleOAuthController)
 Router.route("/change-role")
 .post(auth(UserRole.admin,UserRole.super), userController.changeUserRoleController)
+Router.route("/add-member")
+.post(auth(UserRole.admin, UserRole.super), userController.addTeamMemberController)
 
 // Router.route("/email-verification/:email")
 // .post(userController.createVerificationCodeController)

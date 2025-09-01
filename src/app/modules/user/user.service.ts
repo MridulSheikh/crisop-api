@@ -59,7 +59,7 @@ const loginUserService = async (payload: {
   }
 
   // update user need user login status
-  await User.findOneAndUpdate({email: payload.email},{needLogin : false})
+  await User.findOneAndUpdate({ email: payload.email }, { needLogin: false });
 
   const jwtPayload = {
     _id: isUserExists._id as mongoose.Types.ObjectId,
@@ -87,7 +87,7 @@ const loginUserService = async (payload: {
   return {
     accessToken,
     refreshToken,
-    role: isUserExists.role
+    role: isUserExists.role,
   };
 };
 
@@ -145,8 +145,6 @@ const refreshTokenService = async (token: string) => {
     accessToken,
   };
 };
-
-
 
 // forgot password
 const forgotPassowrdService = async (email: string) => {
@@ -278,8 +276,8 @@ const handleOAuthService = async (token: string, method: string) => {
     );
   }
 
-   // update user need user login status
-  await User.findOneAndUpdate({email: user.email},{needLogin : false})
+  // update user need user login status
+  await User.findOneAndUpdate({ email: user.email }, { needLogin: false });
 
   const jwtPayload = {
     _id: user._id as mongoose.Types.ObjectId,
@@ -411,37 +409,78 @@ const verifyEmailSerivce = async (email: string, code: string) => {
   };
 };
 
-
 // change user role
-const changeUserRoleServices = async (email: string, role: UserRole) =>{
-     // check if user exists 
-     const isExists = await User.isUserExsitsByUserEmail(email);
-      // check role is super or not 
-     if(isExists.role === "super"){
-      throw new AppError(httpStatus.BAD_REQUEST, "Super Admin cannot be removed or modified.")
-     }
-     // check if user not exist in database
-     if(!isExists){
-        throw new AppError(httpStatus.NOT_FOUND, "user not founed!")
-     }
-     const result = await User.findOneAndUpdate({email},{role: role, needLogin: true},{new: true, upsert: true});
-     return result;
-}
+const changeUserRoleServices = async (email: string, role: UserRole) => {
+  // check if user exists
+  const isExists = await User.isUserExsitsByUserEmail(email);
+  // check role is super or not
+  if (isExists.role === 'super') {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Super Admin cannot be removed or modified.',
+    );
+  }
+  // check if user not exist in database
+  if (!isExists) {
+    throw new AppError(httpStatus.NOT_FOUND, 'user not founed!');
+  }
+  const result = await User.findOneAndUpdate(
+    { email },
+    { role: role, needLogin: true },
+    { new: true, upsert: true },
+  );
+  return result;
+};
 
-// get all user service 
-const getAlluserFromDB = async (query: Record<string, unknown>) =>{
-  const mongoQuery: Record <string, unknown> = {};
+// add team member
+const AddTeamMemberServices = async (email: string, role: UserRole) => {
+  const restricRole = ['admin', 'super', 'manager'];
+
+  console.log(role)
+
+  const user = await User.isUserExsitsByUserEmail(email);
+
+  // check user exist or not
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found.');
+  }
+
+  // check if user already have team
+  if (restricRole.includes(user.role)) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'This user already team member.',
+    );
+  }
+  // check authentic role
+  if (!restricRole.includes(role)) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Please provide valid role (admin, super, manager)',
+    );
+  }
+  const result = await User.findOneAndUpdate(
+    { email },
+    { role: role, needLogin: true },
+    { new: true, upsert: true },
+  );
+  return result;
+};
+
+// get all user service
+const getAlluserFromDB = async (query: Record<string, unknown>) => {
+  const mongoQuery: Record<string, unknown> = {};
 
   // handle role=admin,manager
-  if(query.role && typeof query.role === 'string'){
-    mongoQuery.role = {$in: query.role.split(",")};
+  if (query.role && typeof query.role === 'string') {
+    mongoQuery.role = { $in: query.role.split(',') };
   }
 
   // final output result
   const result = await User.find(mongoQuery);
 
   return result;
-}
+};
 
 const userService = {
   changeUserRoleServices,
@@ -454,7 +493,8 @@ const userService = {
   handleOAuthService,
   createVerificationCodeService,
   verifyEmailSerivce,
-  getAlluserFromDB
+  getAlluserFromDB,
+  AddTeamMemberServices,
 };
 
 export default userService;

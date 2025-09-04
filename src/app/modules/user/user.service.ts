@@ -265,6 +265,7 @@ const handleOAuthService = async (token: string, method: string) => {
       email: oauthUser.email,
       image: oauthUser.image,
       isVerified: true,
+      authProvider: method,
     });
   }
 

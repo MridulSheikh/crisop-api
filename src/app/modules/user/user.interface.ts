@@ -12,6 +12,7 @@ export interface IUser {
   name: string;
   email: string;
   password: string;
+  authProvider: "local" | "google" | "facebook";
   image: string;
   role: UserRole;
   isVerified: boolean;

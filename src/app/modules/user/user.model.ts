@@ -18,9 +18,16 @@ const userSchema = new Schema<IUser, UserModel>(
       lowercase: true,
       trim: true,
     },
+    authProvider: {
+      type: String,
+      enum: ["local", "google", "facebook"],
+      default: "local",
+    },
     password: {
       type: String,
-      required: true,
+      required: function () {
+        return this.authProvider === "local"
+      },
       select: 0,
     },
     image: {
@@ -72,8 +79,10 @@ const userEmailVerificationCenter = new Schema({
 userSchema.pre('save', async function (next) {
   // eslint-disable-next-line @typescript-eslint/no-this-alias
   const user = this;
+  if (user.authProvider === "local") {
+    user.password = await bcrypt.hash(user.password, Number(config.BCRYPT_SALT));
+  }
 
-  user.password = await bcrypt.hash(user.password, Number(config.BCRYPT_SALT));
   next();
 });
 

@@ -16,6 +16,7 @@ import bcrypt from 'bcrypt';
 import { fetchGoogleUserInfo } from '../../utils/fetchGoogleUserInfo';
 import { fetchFacebookUserInfo } from '../../utils/fechFacebookUserInfo';
 import { generateVerificationCode } from '../../utils/generateVerificationCode';
+import QueryBuilder from '../../builder/QueryBuilder';
 
 // create user into database
 const createUserIntoDatabaseService = async (payload: IUser) => {
@@ -437,7 +438,7 @@ const changeUserRoleServices = async (email: string, role: UserRole) => {
 const AddTeamMemberServices = async (email: string, role: UserRole) => {
   const restricRole = ['admin', 'super', 'manager'];
 
-  console.log(role)
+  console.log(role);
 
   const user = await User.isUserExsitsByUserEmail(email);
 
@@ -478,9 +479,29 @@ const getAlluserFromDB = async (query: Record<string, unknown>) => {
   }
 
   // final output result
-  const result = await User.find(mongoQuery);
+  const userQuery = new QueryBuilder(User.find(), query)
+    .search(['email', 'name'])
+    .filter()
+    .fields()
+    .paginate();
 
-  return result;
+  const result = await userQuery.modelQuery;
+  // pagination info
+
+  const total = await User.countDocuments(result);
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 10;
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages,
+    },
+    data: result,
+  };
 };
 
 const userService = {

@@ -479,16 +479,17 @@ const getAlluserFromDB = async (query: Record<string, unknown>) => {
   }
 
   // final output result
-  const userQuery = new QueryBuilder(User.find(), query)
+  const userQuery = new QueryBuilder(User.find(), mongoQuery)
     .search(['email', 'name'])
     .filter()
     .fields()
     .paginate();
 
   const result = await userQuery.modelQuery;
+
   // pagination info
 
-  const total = await User.countDocuments(result);
+  const total = await User.countDocuments(mongoQuery);
   const page = Number(query.page) || 1;
   const limit = Number(query.limit) || 10;
   const totalPages = Math.ceil(total / limit);

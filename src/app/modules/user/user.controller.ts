@@ -171,18 +171,22 @@ const addTeamMemberController = catchAsync(
   }
 )
 
-// get all user controller
 const getAllUserFromDB = catchAsync(async (req: Request, res: Response) => {
-  const query = req.query;
-  const resData = await userService.getAlluserFromDB(query);
+  const query = { ...req.query };
+
+  // Convert page to number
+  const page = Number(query.page) || 1;
+
+  const resData = await userService.getAlluserFromDB({ page, role: query.role });
 
   sendResponse(res, {
     success: true,
-    message: 'successfully retrived user',
+    message: 'Successfully retrieved users',
     data: resData,
     statusCode: httpStatus.OK,
   });
 });
+
 
 const userController = {
   forgetPasswordController,

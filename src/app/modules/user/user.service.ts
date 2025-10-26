@@ -491,7 +491,7 @@ const getAlluserFromDB = async (query: Record<string, unknown>) => {
 
   const total = await User.countDocuments(mongoQuery);
   const page = Number(query.page) || 1;
-  const limit = Number(query.limit) || 10;
+  const limit = Number(query.limit) || 2;
   const totalPages = Math.ceil(total / limit);
 
   return {

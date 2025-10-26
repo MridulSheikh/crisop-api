@@ -174,10 +174,7 @@ const addTeamMemberController = catchAsync(
 const getAllUserFromDB = catchAsync(async (req: Request, res: Response) => {
   const query = { ...req.query };
 
-  // Convert page to number
-  const page = Number(query.page) || 1;
-
-  const resData = await userService.getAlluserFromDB({ page, role: query.role });
+  const resData = await userService.getAlluserFromDB(query);
 
   sendResponse(res, {
     success: true,

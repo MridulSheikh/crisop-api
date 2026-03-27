@@ -485,12 +485,11 @@ const getAlluserFromDB = async (query: Record<string, unknown>) => {
 
   const result = await userQuery.modelQuery;
 
-
   // pagination info
 
   const total = await User.countDocuments(mongoQuery);
-  const page = Number(query.page) || 1;
-  const limit = Number(query.limit) || 2;
+  const page = Math.max(1, Number(query.page) || 1);
+  const limit = Math.max(1, Number(query.limit) || 10);
   const totalPages = Math.ceil(total / limit);
 
   return {

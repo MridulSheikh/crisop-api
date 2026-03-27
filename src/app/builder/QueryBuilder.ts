@@ -1,66 +1,68 @@
-import { FilterQuery, Query } from "mongoose";
+import { FilterQuery, Query } from 'mongoose';
 
 class QueryBuilder<T> {
-    public modelQuery: Query<T[], T>;
-    public query: Record<string, unknown>;
+  public modelQuery: Query<T[], T>;
+  public query: Record<string, unknown>;
 
-    constructor(modelQuery: Query<T[], T>, query: Record<string, unknown>) {
-        this.modelQuery = modelQuery;
-        this.query = query;
+  constructor(modelQuery: Query<T[], T>, query: Record<string, unknown>) {
+    this.modelQuery = modelQuery;
+    this.query = query;
+  }
+
+  search(searchablefields: string[]) {
+    const searchTerm = this?.query?.searchTerm;
+    if (searchTerm) {
+      this.modelQuery = this.modelQuery.find({
+        $or: searchablefields.map((field) => ({
+          [field]: { $regex: searchTerm, $options: 'i' },
+        })),
+      });
     }
 
-    search(searchablefields: string[]) {
-        const searchTerm = this?.query?.searchTerm
-        if (searchTerm) {
-            this.modelQuery = this.modelQuery.find({
-                $or: searchablefields.map(
-                    (field) => ({
-                        [field]: { $regex: searchTerm, $options: 'i' }
-                    })
-                )
-            })
-        };
+    return this;
+  }
 
-        return this;
+  filter() {
+    const queryObj = { ...this.query };
+
+    //Filtering
+    const excludeFields = ['searchTerm', 'sort', 'limit', 'page', 'fields'];
+
+    excludeFields.forEach((el) => delete queryObj[el]);
+
+    // handle role=admin,manager
+    if (queryObj.role && typeof queryObj.role === 'string') {
+      queryObj.role = { $in: queryObj.role.split(',') };
     }
 
-    filter() {
-        const queryObj = { ...this.query };
+    this.modelQuery = this.modelQuery.find(queryObj as FilterQuery<T>);
 
-        //Filtering 
-        const excludeFields = ['searchTerm', 'sort', 'limit', 'page', 'fields'];
+    return this;
+  }
 
-        excludeFields.forEach((el) => delete queryObj[el]);
+  sort() {
+    const querySort = this?.query?.sort;
+    const sort = querySort || '-createdAt';
+    this.modelQuery = this.modelQuery.sort(sort as string);
+    return this;
+  }
 
-        this.modelQuery = this.modelQuery.find(queryObj as FilterQuery<T>);
+  paginate() {
+    const page = Number(this?.query?.page) || 1;
+    const limit = Number(this?.query?.limit) || 10;
+    const skip = (page - 1) * limit;
+    this.modelQuery = this.modelQuery.skip(skip).limit(limit);
 
-        return this;
-    }
+    return this;
+  }
 
-    sort(){
-        const querySort = this?.query?.sort;
-        const  sort = querySort || '-createdAt';
-        this.modelQuery = this.modelQuery.sort(sort as string);
-        return this;
-    }
+  fields() {
+    const fields =
+      (this?.query?.fileds as string)?.split(',').join(' ') || '-__v';
+    this.modelQuery = this.modelQuery.select(fields);
 
-    paginate(){
-        const page = Number(this?.query?.page) || 1;
-        const limit = Number(this?.query?.limit) || 10;
-        const skip = (page -1)*limit;
-        
-        this.modelQuery = this.modelQuery.skip(skip).limit(limit);
-
-        return this;
-    }
-
-    fields(){
-        const fields = (this?.query?.fileds as string)?.split(',').join(' ') || '-__v';
-        this.modelQuery = this.modelQuery.select(fields);
-
-        return this;
-    }
-
+    return this;
+  }
 }
 
 export default QueryBuilder;

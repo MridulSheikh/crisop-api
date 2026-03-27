@@ -438,8 +438,6 @@ const changeUserRoleServices = async (email: string, role: UserRole) => {
 const AddTeamMemberServices = async (email: string, role: UserRole) => {
   const restricRole = ['admin', 'super', 'manager'];
 
-  console.log(role);
-
   const user = await User.isUserExsitsByUserEmail(email);
 
   // check user exist or not
@@ -479,13 +477,14 @@ const getAlluserFromDB = async (query: Record<string, unknown>) => {
   }
 
   // final output result
-  const userQuery = new QueryBuilder(User.find(), mongoQuery)
+  const userQuery = new QueryBuilder(User.find(mongoQuery), query)
     .search(['email', 'name'])
     .filter()
     .fields()
     .paginate();
 
   const result = await userQuery.modelQuery;
+
 
   // pagination info
 

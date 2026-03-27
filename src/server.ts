@@ -5,6 +5,9 @@ import { Server } from 'http';
 import { transporter } from './app/helpers/email';
 import AppError from './app/errors/AppError';
 import colors from 'colors';
+import dns from "dns";
+
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
 
 let server: Server;
 
@@ -15,7 +18,10 @@ async function main() {
 
     // Show DB connecting once
     console.log(colors.yellow('📡 Connecting to database...'));
-    await mongoose.connect(config.database_url as string);
+    await mongoose.connect(config.database_url as string,{
+      serverSelectionTimeoutMS: 30000,
+      family: 4
+    });
     console.log(colors.green('✅ Database connection successful.'));
 
     // Verify SMTP once

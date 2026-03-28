@@ -11,17 +11,6 @@ const createWarehouseService = async (payload: IWarehouse) => {
 
 // get all warehouse
 const getAllWarehouseFromDBService = async (query: Record<string, unknown>) => {
-  // const result = await Warehouse.find(
-  //   { isDeleted: { $ne: true } },
-  //   { isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 },
-  // );
-
-  // if (result.length === 0) {
-  //   throw new AppError(
-  //     httpStatus.NOT_FOUND,
-  //     'No Warehouse found. Failed to retrieve Warehouse.',
-  //   );
-  // }
 
   const wareHouseQuery = new QueryBuilder(Warehouse.find(), query)
     .search(['name', 'location'])

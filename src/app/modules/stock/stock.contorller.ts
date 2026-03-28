@@ -16,7 +16,7 @@ const createStockeIntoDbController = catchAsync(async(req: Request, res: Respons
 })
 
 const getAllStockFromDBController = catchAsync(async(req: Request, res: Response)=>{
-    const result = await getAllStockFromDBService();
+    const result = await getAllStockFromDBService(req.query);
 
     sendResponse(res,{
         statusCode: httpStatus.OK,

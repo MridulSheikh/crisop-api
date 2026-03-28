@@ -4,6 +4,7 @@ import { IStock } from './stock.interface';
 import Stock from './stock.model';
 import gsku from '../../helpers/gsku';
 import Warehouse from '../warehouse/warehouse.model';
+import QueryBuilder from '../../builder/QueryBuilder';
 
 // post stok in database
 const createStockIntoDBService = async (payload: IStock) => {
@@ -33,11 +34,20 @@ const createStockIntoDBService = async (payload: IStock) => {
 };
 
 // get all stock
-const getAllStockFromDBService = async () => {
-  const result = await Stock.find(
-    { isDeleted: { $ne: true } },
-    { isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 },
-  ).populate('warehouse', 'name location capacity -_id');
+const getAllStockFromDBService = async (query: Record<string, unknown>) => {
+  const stockQuery = new QueryBuilder(
+    Stock.find({ isDeleted: { $ne: true } }).populate(
+      'warehouse',
+      'name location capacity -_id',
+    ),
+    query,
+  )
+    .search(['productName','sku']) 
+    .filter()
+    .fields()
+    .paginate();
+
+  const result = await stockQuery.modelQuery;
 
   if (result.length === 0) {
     throw new AppError(
@@ -46,7 +56,21 @@ const getAllStockFromDBService = async () => {
     );
   }
 
-  return result;
+  const total = await Stock.countDocuments(stockQuery.modelQuery.getFilter());
+
+  const page = Math.max(1, Number(query.page) || 1);
+  const limit = Math.max(1, Number(query.limit) || 10);
+  const totalPages = Math.ceil(total / limit);
+
+  return {
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages,
+    },
+    data: result,
+  };
 };
 
 // get single stock

@@ -2,6 +2,7 @@ import httpStatus from 'http-status';
 import AppError from '../../errors/AppError';
 import { IWarehouse } from './warehouse.interface';
 import Warehouse from './warehouse.model';
+import QueryBuilder from '../../builder/QueryBuilder';
 
 // create warehose service
 const createWarehouseService = async (payload: IWarehouse) => {
@@ -9,27 +10,53 @@ const createWarehouseService = async (payload: IWarehouse) => {
 };
 
 // get all warehouse
-const getAllWarehouseFromDBService = async () => {
-  const result = await Warehouse.find(
-    { isDeleted: { $ne: true } },
-    { isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 },
+const getAllWarehouseFromDBService = async (query: Record<string, unknown>) => {
+  // const result = await Warehouse.find(
+  //   { isDeleted: { $ne: true } },
+  //   { isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 },
+  // );
+
+  // if (result.length === 0) {
+  //   throw new AppError(
+  //     httpStatus.NOT_FOUND,
+  //     'No Warehouse found. Failed to retrieve Warehouse.',
+  //   );
+  // }
+
+  const wareHouseQuery = new QueryBuilder(Warehouse.find(), query)
+    .search(['name', 'location'])
+    .filter()
+    .fields()
+    .paginate();
+
+  const result = await wareHouseQuery.modelQuery;
+
+  const total = await Warehouse.countDocuments(
+    wareHouseQuery.modelQuery.getFilter(),
   );
 
-  if (result.length === 0) {
-    throw new AppError(
-      httpStatus.NOT_FOUND,
-      'No Warehouse found. Failed to retrieve Warehouse.',
-    );
-  }
+  const page = Math.max(1, Number(query.page) || 1);
+  const limit = Math.max(1, Number(query.limit) || 10);
+  const totalPages = Math.ceil(total / limit);
 
-  return result;
+  const response = {
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages,
+    },
+    data: result,
+  };
+
+  return response;
 };
 
 // get single warehouse
 const getSingleWarehoseByIdService = async (id: string) => {
   const result = await Warehouse.findOne(
     { _id: id, isDeleted: { $ne: true } }, // filter
-    { isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0  }, // projection: exclude isDeleted
+    { isDeleted: 0, createdAt: 0, updatedAt: 0, __v: 0 }, // projection: exclude isDeleted
   );
 
   if (!result) {
@@ -49,14 +76,14 @@ const updateWarehousebyIdService = async (id: string, payload: IWarehouse) => {
     isDeleted: { $ne: true },
   });
 
-  if(!isWarehouseExists){
-     throw new AppError(httpStatus.NOT_FOUND, 'warehouse not found');
+  if (!isWarehouseExists) {
+    throw new AppError(httpStatus.NOT_FOUND, 'warehouse not found');
   }
 
   const result = await Warehouse.findByIdAndUpdate(id, payload, {
     new: true,
     runValidators: true,
-    projection: {isDeleted: 0}
+    projection: { isDeleted: 0 },
   });
 
   if (!result) {

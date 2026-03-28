@@ -24,7 +24,7 @@ const createWarehouseIntoDbController = catchAsync(
 
 const getAllWarehouseFromDbController = catchAsync(
   async (req: Request, res: Response) => {
-    const result = await getAllWarehouseFromDBService();
+    const result = await getAllWarehouseFromDBService(req.query);
 
     sendResponse(res, {
       success: true,

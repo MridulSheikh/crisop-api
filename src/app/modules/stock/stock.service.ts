@@ -38,7 +38,7 @@ const getAllStockFromDBService = async (query: Record<string, unknown>) => {
   const stockQuery = new QueryBuilder(
     Stock.find({ isDeleted: { $ne: true } }).populate(
       'warehouse',
-      'name location capacity -_id',
+      'name location capacity _id',
     ),
     query,
   )

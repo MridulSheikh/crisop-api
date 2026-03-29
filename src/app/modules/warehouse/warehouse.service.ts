@@ -12,7 +12,7 @@ const createWarehouseService = async (payload: IWarehouse) => {
 // get all warehouse
 const getAllWarehouseFromDBService = async (query: Record<string, unknown>) => {
 
-  const wareHouseQuery = new QueryBuilder(Warehouse.find(), query)
+  const wareHouseQuery = new QueryBuilder(Warehouse.find({ isDeleted: { $ne: true } }), query)
     .search(['name', 'location'])
     .filter()
     .fields()

@@ -6,6 +6,14 @@ import QueryBuilder from '../../builder/QueryBuilder';
 
 // create warehose service
 const createWarehouseService = async (payload: IWarehouse) => {
+  const isWarehouseExists = await Warehouse.findOne({
+    name: payload.name,
+    isDeleted: { $ne: true },
+  });
+
+  if (isWarehouseExists) {
+    throw new AppError(httpStatus.CONFLICT, 'Warehouse already exist!');
+  }
   return await Warehouse.create(payload);
 };
 

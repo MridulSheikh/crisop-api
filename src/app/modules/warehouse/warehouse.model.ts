@@ -8,7 +8,6 @@ const warehouseSchema = new Schema<IWarehouse>(
     name: {
       type: String,
       required: true,
-      unique: true,
       trim: true,
     },
     location: {

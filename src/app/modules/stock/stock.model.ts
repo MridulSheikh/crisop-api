@@ -8,6 +8,10 @@ const stockSchema = new Schema<IStock>(
       required: true,
       trim: true,
     },
+    unit:{
+      type: String,
+      required: true,
+    },
     sku: {
       type: String,
       required: true,

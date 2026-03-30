@@ -28,25 +28,14 @@ const createProductController = catchAsync(async (req: Request, res: Response) =
 
 // Get all products (with filters)
 const getAllProductsController = catchAsync(async (req: Request, res: Response) => {
-  const result = await getAllProductsFromDBService({
-    limit: Number(req.query.limit) || 10,
-    page: Number(req.query.page) || 1,
-    category: req.query.category as string,
-    minPrice: req.query.minPrice ? Number(req.query.minPrice) : undefined,
-    maxPrice: req.query.maxPrice ? Number(req.query.maxPrice) : undefined,
-    featuredOnly: req.query.featured === 'true',
-  });
+  const result = await getAllProductsFromDBService(req.query);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
     message: "Products retrieved successfully",
-    meta: {
-      page: Number(req.query.page) || 1,
-      limit: Number(req.query.limit) || 10,
-      total: result.length,
-    },
-    data: result,
+    meta: result.meta,
+    data: result.data,
   });
 });
 

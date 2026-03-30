@@ -10,6 +10,7 @@ import {
   toggleFeaturedController,
 } from "./product.controller";
 import { createProductSchema, updateProductSchema } from "./product.validation";
+import { UserRole } from "../user/user.interface";
 
 const router = express.Router();
 
@@ -22,7 +23,7 @@ router
     createProductController
   )
   .get(
-    getAllProductsController
+    auth(UserRole.admin, UserRole.manager, UserRole.super, UserRole.user),getAllProductsController
   );
 
 router

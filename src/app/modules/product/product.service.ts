@@ -5,6 +5,7 @@ import Product from './product.model';
 import Stock from '../stock/stock.model';
 import Category from '../category/category.model';
 import { Types } from 'mongoose';
+import QueryBuilder from '../../builder/QueryBuilder';
 
 // Create new product
 const createProductIntoDBService = async (payload: IProductInterface) => {
@@ -44,49 +45,38 @@ const createProductIntoDBService = async (payload: IProductInterface) => {
 };
 
 // Get all products (with filters)
-const getAllProductsFromDBService = async ({
-  limit = 10,
-  page = 1,
-  category,
-  minPrice,
-  maxPrice,
-  featuredOnly = false,
-}: {
-  limit?: number;
-  page?: number;
-  category?: string;
-  minPrice?: number;
-  maxPrice?: number;
-  featuredOnly?: boolean;
-}) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const query: any = { isDeleted: { $ne: true } };
+const getAllProductsFromDBService = async (query: Record<string, unknown>) => {
+  const productQuery = new QueryBuilder(
+    Product.find({ isDeleted: { $ne: true } })
+      .populate("stock", "quantity warehouse")
+      .populate("category", "name"),
+    query
+  )
+    .search(["name", "description"])
+    .filter()
+    .fields()
+    .sort()
+    .paginate();
 
-  if (featuredOnly) query.isFeatured = true;
-  if (category && Types.ObjectId.isValid(category)) query.category = category;
+  const result = await productQuery.modelQuery;
 
-  // Price range filter
-  if (minPrice !== undefined || maxPrice !== undefined) {
-    query.price = {};
-    if (minPrice !== undefined) query.price.$gte = minPrice;
-    if (maxPrice !== undefined) query.price.$lte = maxPrice;
-  }
+  const total = await Product.countDocuments(
+    productQuery.modelQuery.getFilter()
+  );
 
-  const results = await Product.find(query, {
-    isDeleted: 0,
-    __v: 0,
-  })
-    .populate('stock', 'quantity warehouse')
-    .populate('category', 'name')
-    .skip((page - 1) * limit)
-    .limit(limit)
-    .sort({ createdAt: -1 });
+  const page = Math.max(1, Number(query.page) || 1);
+  const limit = Math.max(1, Number(query.limit) || 10);
+  const totalPages = Math.ceil(total / limit);
 
-  if (results.length === 0) {
-    throw new AppError(httpStatus.NOT_FOUND, 'No products found');
-  }
-
-  return results;
+  return {
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages,
+    },
+    data: result,
+  };
 };
 
 // Get single product by ID

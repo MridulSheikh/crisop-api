@@ -9,11 +9,11 @@ const router = express.Router()
 
 router.route("/")
 .post(auth(UserRole.admin, UserRole.manager, UserRole.super), validateRequest(categoryValidation.createCategoryValidationSchema), createCategoryIntoDatabseController)
-.get(auth(UserRole.admin, UserRole.manager, UserRole.super), getAllCategoriesFromDBController)
+.get(getAllCategoriesFromDBController)
 
 router.route("/:id")
-.patch(auth("admin", "manager"), validateRequest(categoryValidation.updateCategoryValidationSchema), updateOneCateogryIntoDBController)
-.delete(auth("admin", "manager"), deleteOneCategoryController)
+.patch(auth(UserRole.admin, UserRole.manager, UserRole.super), validateRequest(categoryValidation.updateCategoryValidationSchema), updateOneCateogryIntoDBController)
+.delete(auth(UserRole.admin, UserRole.manager, UserRole.super), deleteOneCategoryController)
 .get(auth('admin', 'manager'), getSingleCategoryFromDbController)
 
 export default router;

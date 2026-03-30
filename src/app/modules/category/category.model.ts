@@ -1,9 +1,12 @@
-import { Schema, Document, model } from 'mongoose';
-import { ICategory } from './category.interface';
+import { Schema, Document, model, Types } from "mongoose";
+import { ICategory } from "./category.interface";
 
-export interface ICategoryDocument extends ICategory, Document {}
+export interface ICategoryDocument extends ICategory, Document {
+  _id: Types.ObjectId;
+  productsCount?: number; 
+}
 
-const CategorySchema: Schema = new Schema<ICategoryDocument>(
+const CategorySchema = new Schema<ICategoryDocument>(
   {
     name: {
       type: String,
@@ -11,22 +14,33 @@ const CategorySchema: Schema = new Schema<ICategoryDocument>(
       trim: true,
       unique: true,
     },
+
     description: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
     },
-    isDeleted:{
+
+    isDeleted: {
       type: Boolean,
       default: false,
-    }
+    },
   },
   {
-    timestamps: true, // adds createdAt and updatedAt
+    timestamps: true,
     versionKey: false,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
   }
 );
 
-const Category = model<ICategoryDocument>('Category', CategorySchema);
+CategorySchema.virtual("productsCount", {
+  ref: "Product",          
+  localField: "_id",       
+  foreignField: "category",
+  count: true,            
+});
+
+const Category = model<ICategoryDocument>("Category", CategorySchema);
 
 export default Category;

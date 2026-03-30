@@ -25,7 +25,7 @@ const createCategoryIntoDatabseController = catchAsync(
 
 const getAllCategoriesFromDBController = catchAsync(
   async (req: Request, res: Response) => {
-    const result = await getAllCategoryFromDBService();
+    const result = await getAllCategoryFromDBService(req.query);
     sendResponse(res, {
       success: true,
       message: 'Successfully retrived categories',

@@ -42,7 +42,7 @@ const getAllWarehouseFromDBService = async (query: Record<string, unknown>) => {
       page,
       limit,
       totalPages,
-    },
+    },  
     data: result,
   };
 

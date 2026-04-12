@@ -18,7 +18,7 @@ const router = express.Router();
 router
   .route('/')
   .post(
-    auth("admin", "manager"),
+   auth(UserRole.admin, UserRole.manager, UserRole.super),
     validateRequest(createProductSchema),
     createProductController
   )

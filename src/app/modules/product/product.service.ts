@@ -9,6 +9,7 @@ import QueryBuilder from '../../builder/QueryBuilder';
 
 // Create new product
 const createProductIntoDBService = async (payload: IProductInterface) => {
+  console.log(payload)
   // Validate references exist
   const [stockExists, categoryExists] = await Promise.all([
     Stock.findOne({ _id: payload.stock, isDeleted: { $ne: true } }),
@@ -31,16 +32,16 @@ const createProductIntoDBService = async (payload: IProductInterface) => {
     );
   }
 
-  const result = await Product.create({
-    ...payload,
-    isFeatured: payload.isFeatured || false,
-    isDeleted: false,
-    isPublished: payload.isPublished || false,
-  });
+  // const result = await Product.create({
+  //   ...payload,
+  //   isFeatured: payload.isFeatured || false,
+  //   isDeleted: false,
+  //   isPublished: payload.isPublished || false,
+  // });
 
   return {
-    productName: result.name,
-    insertedId: result._id,
+    productName: "",
+    insertedId: "",
   };
 };
 

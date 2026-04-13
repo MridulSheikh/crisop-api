@@ -13,7 +13,9 @@ import {
 
 // Create new product
 const createProductController = catchAsync(async (req: Request, res: Response) => {
-  const result = await createProductIntoDBService(req.body);
+  // eslint-disable-next-line no-undef
+  const result = await createProductIntoDBService(req.body, req.files as Express.Multer.File[]);
+  
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,

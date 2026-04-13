@@ -1,12 +1,18 @@
 import { z } from 'zod';
 import mongoose from 'mongoose';
 
+const booleanFromString = z.preprocess((val) => {
+  if (val === 'true') return true;
+  if (val === 'false') return false;
+  return val;
+}, z.boolean());
+
 // Base fields (shared between create/update)
 const productBodySchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters').max(100),
-  description: z.string().max(500).optional(),
-  price: z.number().positive('Price must be greater than 0'),
-  discountPrice: z.number().positive().optional(),
+  description: z.string().max(2000).optional(),
+  price: z.preprocess((val) => Number(val), z.number().positive()),
+  discountPrice: z.preprocess((val) => Number(val), z.number().positive()),
   stock: z.string().refine((val) => mongoose.Types.ObjectId.isValid(val), {
     message: 'Invalid Stock ID (must be ObjectId)',
   }),
@@ -14,12 +20,8 @@ const productBodySchema = z.object({
     message: 'Invalid Category ID (must be ObjectId)',
   }),
   tags: z.array(z.string().min(1)).optional(),
-  images: z
-    .array(z.string().url('Invalid image URL'))
-    .min(1, 'At least 1 image is required'),
-  isFeatured: z.boolean().optional().default(false),
-  isDeleted: z.boolean().default(false),
-  isPublished: z.boolean().default(false),
+  isFeatured: booleanFromString.optional().default(false),
+  isPublished: booleanFromString.optional().default(false),
 });
 
 // CREATE schema: all required (except optional ones)

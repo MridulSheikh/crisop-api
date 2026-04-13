@@ -1,6 +1,6 @@
-import express from "express";
-import auth from "../../middlewares/auth";
-import validateRequest from "../../middlewares/validateRequest";
+import express from 'express';
+import auth from '../../middlewares/auth';
+import validateRequest from '../../middlewares/validateRequest';
 import {
   createProductController,
   getAllProductsController,
@@ -8,9 +8,10 @@ import {
   updateProductController,
   deleteProductController,
   toggleFeaturedController,
-} from "./product.controller";
-import { createProductSchema, updateProductSchema } from "./product.validation";
-import { UserRole } from "../user/user.interface";
+} from './product.controller';
+import { createProductSchema, updateProductSchema } from './product.validation';
+import { UserRole } from '../user/user.interface';
+import { upload } from '../../utils/SendImageToCloudinary';
 
 const router = express.Router();
 
@@ -18,35 +19,34 @@ const router = express.Router();
 router
   .route('/')
   .post(
-   auth(UserRole.admin, UserRole.manager, UserRole.super),
+    auth(UserRole.admin, UserRole.manager, UserRole.super),
+    upload.array('images', 5),
     validateRequest(createProductSchema),
-    createProductController
+    createProductController,
   )
   .get(
-    auth(UserRole.admin, UserRole.manager, UserRole.super, UserRole.user),getAllProductsController
+    auth(UserRole.admin, UserRole.manager, UserRole.super, UserRole.user),
+    getAllProductsController,
   );
 
 router
   .route('/:id')
   .get(
-    auth("admin", "manager", "user"), // Allow users to view single product
-    getSingleProductController
+    auth('admin', 'manager', 'user'), // Allow users to view single product
+    getSingleProductController,
   )
   .patch(
-    auth("admin", "manager"),
+    auth('admin', 'manager'),
     validateRequest(updateProductSchema),
-    updateProductController
+    updateProductController,
   )
-  .delete(
-    auth("admin", "manager"),
-    deleteProductController
-  );
+  .delete(auth(UserRole.admin, UserRole.manager, UserRole.super), deleteProductController);
 
 // Featured status toggle (special endpoint)
 router.patch(
   '/:id/featured',
-  auth("admin", "manager"),
-  toggleFeaturedController
+  auth('admin', 'manager'),
+  toggleFeaturedController,
 );
 
 export default router;

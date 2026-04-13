@@ -6,10 +6,20 @@ import Stock from '../stock/stock.model';
 import Category from '../category/category.model';
 import { Types } from 'mongoose';
 import QueryBuilder from '../../builder/QueryBuilder';
+import { sendImageToCloudinary } from '../../utils/SendImageToCloudinary';
+import fs from 'fs'
+
 
 // Create new product
-const createProductIntoDBService = async (payload: IProductInterface) => {
-  console.log(payload)
+const createProductIntoDBService = async (
+  payload: IProductInterface,
+  // eslint-disable-next-line no-undef
+  files: Express.Multer.File[],
+) => {
+  // Image reauired validation
+  if (!files || files.length === 0) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Please Upload Product Image!');
+  }
   // Validate references exist
   const [stockExists, categoryExists] = await Promise.all([
     Stock.findOne({ _id: payload.stock, isDeleted: { $ne: true } }),
@@ -25,23 +35,34 @@ const createProductIntoDBService = async (payload: IProductInterface) => {
   }
 
   // Validate discount price
-  if (payload.discountPrice && payload.discountPrice >= payload.price) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      'Discount price must be less than regular price'
-    );
+  if (payload.discountPrice && payload.discountPrice < payload.price) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Invalid Discount Price!');
   }
 
-  // const result = await Product.create({
-  //   ...payload,
-  //   isFeatured: payload.isFeatured || false,
-  //   isDeleted: false,
-  //   isPublished: payload.isPublished || false,
-  // });
+   // ☁️ Upload images to cloudinary
+  const uploadedImages = await Promise.all(
+    files.map(async (file) => {
+      const result = await sendImageToCloudinary(file.path, {
+        folder: "products",
+      });
+      return result.url;
+    })
+  );
+
+  const result = await Product.create({
+    ...payload,
+    images: uploadedImages,
+    isFeatured: payload.isFeatured || false,
+    isDeleted: false,
+    isPublished: payload.isPublished || false,
+  });
+
+  //  delete local files
+  files.forEach((file) => fs.unlinkSync(file.path));
 
   return {
-    productName: "",
-    insertedId: "",
+    productName: result,
+    insertedId: result._id,
   };
 };
 
@@ -49,11 +70,11 @@ const createProductIntoDBService = async (payload: IProductInterface) => {
 const getAllProductsFromDBService = async (query: Record<string, unknown>) => {
   const productQuery = new QueryBuilder(
     Product.find({ isDeleted: { $ne: true } })
-      .populate("stock", "quantity warehouse")
-      .populate("category", "name"),
-    query
+      .populate('stock', 'quantity warehouse')
+      .populate('category', 'name'),
+    query,
   )
-    .search(["name", "description"])
+    .search(['name', 'description'])
     .filter()
     .fields()
     .sort()
@@ -62,7 +83,7 @@ const getAllProductsFromDBService = async (query: Record<string, unknown>) => {
   const result = await productQuery.modelQuery;
 
   const total = await Product.countDocuments(
-    productQuery.modelQuery.getFilter()
+    productQuery.modelQuery.getFilter(),
   );
 
   const page = Math.max(1, Number(query.page) || 1);
@@ -88,7 +109,7 @@ const getSingleProductFromDBService = async (id: string) => {
 
   const result = await Product.findOne(
     { _id: id, isDeleted: { $ne: true } },
-    { isDeleted: 0, __v: 0 }
+    { isDeleted: 0, __v: 0 },
   )
     .populate('stock', 'quantity warehouse')
     .populate('category', 'name');
@@ -103,7 +124,7 @@ const getSingleProductFromDBService = async (id: string) => {
 // Update product by ID
 const updateSingleProductInDBService = async (
   id: string,
-  payload: IProductInterface
+  payload: IProductInterface,
 ) => {
   if (!Types.ObjectId.isValid(id)) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Invalid product ID');
@@ -143,7 +164,7 @@ const updateSingleProductInDBService = async (
     ) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        'Discount price must be less than regular price'
+        'Discount price must be less than regular price',
       );
     }
   }
@@ -155,7 +176,10 @@ const updateSingleProductInDBService = async (
   }).populate('category', 'name');
 
   if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Product not found or update failed');
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      'Product not found or update failed',
+    );
   }
 
   return result;
@@ -170,11 +194,14 @@ const removeSingleProductFromDBService = async (id: string) => {
   const result = await Product.findByIdAndUpdate(
     id,
     { isDeleted: true, isPublished: false },
-    { new: true }
+    { new: true },
   );
 
   if (!result) {
-    throw new AppError(httpStatus.NOT_FOUND, 'Product not found or delete failed');
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      'Product not found or delete failed',
+    );
   }
 
   return {

@@ -14,7 +14,6 @@ import {
 // Create new product
 const createProductController = catchAsync(async (req: Request, res: Response) => {
   const result = await createProductIntoDBService(req.body);
-  console.log(req.body)
 
   sendResponse(res, {
     statusCode: httpStatus.CREATED,

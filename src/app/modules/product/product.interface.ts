@@ -1,5 +1,10 @@
 import mongoose, { Document } from "mongoose";
 
+export interface IImageInterface {
+    url: string,
+    public_id: string,
+}
+
 export interface IProductInterface extends Document {
     name: string;                 
     description?: string;       
@@ -8,7 +13,7 @@ export interface IProductInterface extends Document {
     stock: mongoose.Schema.Types.ObjectId;              
     category: mongoose.Schema.Types.ObjectId;            
     tags?: string[];            
-    images: string[];          
+    images: IImageInterface[];          
     isFeatured?: boolean; 
     isDeleted: boolean;
     isPublished: boolean;

@@ -14,6 +14,6 @@ router.route("/")
 router.route("/:id")
 .patch(auth(UserRole.admin, UserRole.manager, UserRole.super), validateRequest(categoryValidation.updateCategoryValidationSchema), updateOneCateogryIntoDBController)
 .delete(auth(UserRole.admin, UserRole.manager, UserRole.super), deleteOneCategoryController)
-.get(auth('admin', 'manager'), getSingleCategoryFromDbController)
+.get(auth(UserRole.admin, UserRole.manager, UserRole.super), getSingleCategoryFromDbController)
 
 export default router;

@@ -7,18 +7,21 @@ import config from '../config';
 const validateRequest = (schema: AnyZodObject) => {
   return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     if (config.NODE_ENV === 'development') {
-      const mappedBody = Object.entries(req.body).map(([key, value]) => ({
-        Field: key,
-        Value: value,
-      }));
-      console.table(mappedBody)
+      // const mappedBody = Object.entries(req.body).map(([key, value]) => ({
+      //   Field: key,
+      //   Value: value,
+      // }));
+      // console.table(mappedBody)
     }
-    await schema.parseAsync({
+    const parsedData = await schema.parseAsync({
       body: req.body,
       cookies: req.cookies,
     });
+    req.body = parsedData.body;
     return next();
   });
 };
 
 export default validateRequest;
+
+

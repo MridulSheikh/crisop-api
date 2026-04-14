@@ -37,7 +37,7 @@ router
   )
   .patch(
     auth(UserRole.admin, UserRole.manager, UserRole.super),
-    upload.array('images', 5),
+    upload.array('newImages', 5),
     validateRequest(updateProductSchema),
     updateProductController,
   )

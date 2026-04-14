@@ -1,10 +1,6 @@
 import { z } from 'zod';
 import mongoose from 'mongoose';
-
-export const imageSchema = z.object({
-  url: z.string().url('Invalid image URL'),
-  public_id: z.string().min(1, 'public_id is required'),
-});
+import { parseToArray } from '../../utils/normalizeArray';
 
 const booleanFromString = z.preprocess((val) => {
   if (val === 'true') return true;
@@ -37,11 +33,13 @@ export const createProductSchema = z.object({
 // UPDATE schema: all fields inside `body` are optional
 export const updateProductSchema = z.object({
   body: productBodySchema.partial().extend({
-    keepImages: z.array(imageSchema).min(1, 'At least one image is required'),
+    tags: z
+      .preprocess(parseToArray, z.array(z.string().min(1)))
+      .optional(),
 
     removedImages: z
-      .array(imageSchema)
-      .min(1, 'At least one image is required'),
+      .preprocess(parseToArray, z.array(z.string().min(1)))
+      .optional(),
   }),
 });
 

@@ -52,7 +52,8 @@ const getSingleProductController = catchAsync(async (req: Request, res: Response
 
 // Update product
 const updateProductController = catchAsync(async (req: Request, res: Response) => {
-  const result = await updateSingleProductInDBService(req.params.id, req.body);
+  // eslint-disable-next-line no-undef
+  const result = await updateSingleProductInDBService(req.params.id, req.body, req.files as Express.Multer.File[]);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,

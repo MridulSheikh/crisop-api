@@ -6,9 +6,9 @@ import Stock from '../stock/stock.model';
 import Category from '../category/category.model';
 import { Types } from 'mongoose';
 import QueryBuilder from '../../builder/QueryBuilder';
-import fs from 'fs'
+import fs from 'fs';
 import { sendImageToCloudinary } from '../../utils/sendImageToCloudinary';
-
+import { v2 as cloudinary } from 'cloudinary';
 
 // Create new product
 const createProductIntoDBService = async (
@@ -39,17 +39,17 @@ const createProductIntoDBService = async (
     throw new AppError(httpStatus.BAD_REQUEST, 'Invalid Discount Price!');
   }
 
-   // ☁️ Upload images to cloudinary
+  // ☁️ Upload images to cloudinary
   const uploadedImages = await Promise.all(
     files.map(async (file) => {
       const result = await sendImageToCloudinary(file.path, {
-        folder: "products",
+        folder: 'products',
       });
       return {
         url: result.url,
-        public_id: result.public_id
-      }
-    })
+        public_id: result.public_id,
+      };
+    }),
   );
 
   const result = await Product.create({
@@ -124,68 +124,119 @@ const getSingleProductFromDBService = async (id: string) => {
   return result;
 };
 
-// Update product by ID
 const updateSingleProductInDBService = async (
   id: string,
-  payload: IProductInterface,
+  payload: IProductInterface & {
+    removedImages?: Array<string | { public_id: string }>;
+  },
+  // eslint-disable-next-line no-undef
+  files?: Express.Multer.File[],
 ) => {
   if (!Types.ObjectId.isValid(id)) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Invalid product ID');
   }
 
-  // Prevent updating certain fields
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-  const { isDeleted, ...updateData } = payload;
+  const product = await Product.findById(id);
+  if (!product) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Product not found!');
+  }
 
-  // Validate references if being updated
+  // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+  const { isDeleted, removedImages, ...updateData } = payload;
+
+
+  const imageIdsToRemove = (removedImages ?? [])
+    .map((image) =>
+      typeof image === 'string'
+        ? JSON.parse(image)?.public_id
+        : image?.public_id,
+    )
+    .filter(Boolean) as string[];
+
+  // STOCK VALIDATION
   if (updateData.stock) {
     const stockExists = await Stock.findOne({
       _id: updateData.stock,
       isDeleted: { $ne: true },
     });
+
     if (!stockExists) {
       throw new AppError(httpStatus.NOT_FOUND, 'Referenced stock not found');
     }
   }
 
+  // CATEGORY VALIDATION
   if (updateData.category) {
     const categoryExists = await Category.findOne({
       _id: updateData.category,
       isDeleted: { $ne: true },
     });
+
     if (!categoryExists) {
       throw new AppError(httpStatus.NOT_FOUND, 'Referenced category not found');
     }
   }
 
-  // Validate discount price
+  // DISCOUNT VALIDATION
   if (updateData.discountPrice) {
-    const currentProduct = await Product.findById(id);
-    if (
-      updateData.discountPrice >=
-      (updateData.price ?? currentProduct?.price ?? 0)
-    ) {
+    const basePrice = updateData.price ?? product.price;
+
+    if (updateData.discountPrice > basePrice) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
-        'Discount price must be less than regular price',
+        'Discount price must be less than price',
       );
     }
   }
 
-  const result = await Product.findByIdAndUpdate(id, updateData, {
-    new: true,
-    runValidators: true,
-    projection: { isDeleted: 0, __v: 0 },
-  }).populate('category', 'name');
+  // REMOVE OLD IMAGES (Cloudinary)
+  if (imageIdsToRemove.length) {
+    await Promise.all(
+      imageIdsToRemove?.map(async (public_id) => {
+        const resCloudinary = await cloudinary.uploader.destroy(public_id);
+        if (resCloudinary.result != 'ok') {
+          throw new AppError(
+            httpStatus.SERVICE_UNAVAILABLE,
+            'We were unable to delete the image. Please try again.',
+          );
+        }
+      }),
+    );
 
-  if (!result) {
-    throw new AppError(
-      httpStatus.NOT_FOUND,
-      'Product not found or update failed',
+    product.images = product.images?.filter(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (img: any) => !imageIdsToRemove.includes(img.public_id),
     );
   }
 
-  return result;
+
+  // UPLOAD NEW IMAGES
+  if (files?.length) {
+    const uploadedImages = await Promise.all(
+      files?.map(async (file) => {
+        const result = await sendImageToCloudinary(file.path, {
+          folder: 'products',
+        });
+
+        fs.unlinkSync(file.path);
+
+        return {
+          url: result.url,
+          public_id: result.public_id,
+        };
+      }),
+    );
+
+    product.images.push(...uploadedImages);
+  }
+
+
+  // UPDATE OTHER FIELDS
+  Object.assign(product, updateData);
+
+  const updated = await product.save();
+
+  return updated;
 };
 
 // Soft delete product

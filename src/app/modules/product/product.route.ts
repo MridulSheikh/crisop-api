@@ -11,7 +11,7 @@ import {
 } from './product.controller';
 import { createProductSchema, updateProductSchema } from './product.validation';
 import { UserRole } from '../user/user.interface';
-import { upload } from '../../utils/SendImageToCloudinary';
+import { upload } from '../../utils/sendImageToCloudinary';
 
 const router = express.Router();
 
@@ -32,11 +32,12 @@ router
 router
   .route('/:id')
   .get(
-    auth('admin', 'manager', 'user'), // Allow users to view single product
+    auth(UserRole.admin, UserRole.manager, UserRole.super, UserRole.user),
     getSingleProductController,
   )
   .patch(
-    auth('admin', 'manager'),
+    auth(UserRole.admin, UserRole.manager, UserRole.super),
+    upload.array('images', 5),
     validateRequest(updateProductSchema),
     updateProductController,
   )

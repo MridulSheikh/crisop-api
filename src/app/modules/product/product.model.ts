@@ -51,10 +51,15 @@ const ProductSchema: Schema = new Schema(
       },
     },
     images: {
-      type: [String],
+      type: [
+        {
+          url: { type: String, required: true },
+          public_id: { type: String, required: true },
+        },
+      ],
       required: [true, 'At least one image is required'],
       validate: {
-        validator: (images: string[]) => images.length > 0,
+        validator: (images: [{url: string, public_id: string}]) => images.length > 0,
         message: 'At least one image is required',
       },
     },

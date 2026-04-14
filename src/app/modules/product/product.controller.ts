@@ -21,10 +21,7 @@ const createProductController = catchAsync(async (req: Request, res: Response) =
     statusCode: httpStatus.CREATED,
     success: true,
     message: "Product created successfully",
-    data: {
-      name: result.productName,
-      id: result.insertedId,
-    },
+    data: result,
   });
 });
 

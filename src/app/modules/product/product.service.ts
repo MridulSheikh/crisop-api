@@ -6,8 +6,8 @@ import Stock from '../stock/stock.model';
 import Category from '../category/category.model';
 import { Types } from 'mongoose';
 import QueryBuilder from '../../builder/QueryBuilder';
-import { sendImageToCloudinary } from '../../utils/SendImageToCloudinary';
 import fs from 'fs'
+import { sendImageToCloudinary } from '../../utils/sendImageToCloudinary';
 
 
 // Create new product
@@ -45,7 +45,10 @@ const createProductIntoDBService = async (
       const result = await sendImageToCloudinary(file.path, {
         folder: "products",
       });
-      return result.url;
+      return {
+        url: result.url,
+        public_id: result.public_id
+      }
     })
   );
 
@@ -61,7 +64,7 @@ const createProductIntoDBService = async (
   files.forEach((file) => fs.unlinkSync(file.path));
 
   return {
-    productName: result,
+    body: result,
     insertedId: result._id,
   };
 };

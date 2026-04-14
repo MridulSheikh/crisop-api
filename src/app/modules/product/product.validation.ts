@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import mongoose from 'mongoose';
 
+export const imageSchema = z.object({
+  url: z.string().url('Invalid image URL'),
+  public_id: z.string().min(1, 'public_id is required'),
+});
+
 const booleanFromString = z.preprocess((val) => {
   if (val === 'true') return true;
   if (val === 'false') return false;
@@ -31,7 +36,13 @@ export const createProductSchema = z.object({
 
 // UPDATE schema: all fields inside `body` are optional
 export const updateProductSchema = z.object({
-  body: productBodySchema.partial(),
+  body: productBodySchema.partial().extend({
+    keepImages: z.array(imageSchema).min(1, 'At least one image is required'),
+
+    removedImages: z
+      .array(imageSchema)
+      .min(1, 'At least one image is required'),
+  }),
 });
 
 // TypeScript types

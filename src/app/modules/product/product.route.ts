@@ -41,7 +41,7 @@ router
     validateRequest(updateProductSchema),
     updateProductController,
   )
-  .delete(auth(UserRole.admin, UserRole.manager, UserRole.super), deleteProductController);
+  .delete(auth(UserRole.admin, UserRole.super), deleteProductController);
 
 // Featured status toggle (special endpoint)
 router.patch(

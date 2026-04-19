@@ -37,6 +37,12 @@ class QueryBuilder<T> {
 
     excludeFields.forEach((el) => delete queryObj[el]);
 
+    if (queryObj.category) {
+      queryObj.category = {
+        $in: (queryObj.category as string).split(','),
+      };
+    }
+
     this.modelQuery = this.modelQuery.find(queryObj as FilterQuery<T>);
 
     return this;

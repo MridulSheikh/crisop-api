@@ -12,7 +12,6 @@ const CategorySchema = new Schema<ICategoryDocument>(
       type: String,
       required: true,
       trim: true,
-      unique: true,
     },
 
     description: {

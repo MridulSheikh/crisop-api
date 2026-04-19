@@ -8,6 +8,7 @@ import {
   updateProductController,
   deleteProductController,
   toggleFeaturedController,
+  getAllProductsAdminController,
 } from './product.controller';
 import { createProductSchema, updateProductSchema } from './product.validation';
 import { UserRole } from '../user/user.interface';
@@ -25,9 +26,11 @@ router
     createProductController,
   )
   .get(
-    auth(UserRole.admin, UserRole.manager, UserRole.super, UserRole.user),
     getAllProductsController,
   );
+
+  router.route('/admin')
+  .get(auth(UserRole.admin, UserRole.manager, UserRole.super), getAllProductsAdminController)
 
 router
   .route('/:id')

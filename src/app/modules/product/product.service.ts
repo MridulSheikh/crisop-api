@@ -35,7 +35,7 @@ const createProductIntoDBService = async (
   }
 
   // Validate discount price
-  if (payload.discountPrice && payload.discountPrice < payload.price) {
+  if (payload.discountPrice && payload.discountPrice > payload.price) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Invalid Discount Price!');
   }
 
@@ -70,10 +70,23 @@ const createProductIntoDBService = async (
 };
 
 // Get all products (with filters)
-const getAllProductsFromDBService = async (query: Record<string, unknown>) => {
+const getAllProductsFromDBService = async (
+  query: Record<string, unknown>,
+  options?: { onlyPublished?: boolean }
+) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const baseFilter: any = {
+    isDeleted: { $ne: true },
+  };
+
+  // Apply condition dynamically
+  if (options?.onlyPublished) {
+    baseFilter.isPublished = { $ne: false };
+  }
+
   const productQuery = new QueryBuilder(
-    Product.find({ isDeleted: { $ne: true } })
-      .populate('stock', 'quantity warehouse')
+    Product.find(baseFilter)
+      .populate('stock', 'quantity warehouse unit')
       .populate('category', 'name'),
     query,
   )
@@ -103,6 +116,7 @@ const getAllProductsFromDBService = async (query: Record<string, unknown>) => {
     data: result,
   };
 };
+
 
 // Get single product by ID
 const getSingleProductFromDBService = async (id: string) => {

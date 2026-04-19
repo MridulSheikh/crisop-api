@@ -25,8 +25,21 @@ const createProductController = catchAsync(async (req: Request, res: Response) =
   });
 });
 
-// Get all products (with filters)
+// Get all products (for all user)
 const getAllProductsController = catchAsync(async (req: Request, res: Response) => {
+  const result = await getAllProductsFromDBService(req.query,{onlyPublished: true});
+
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Products retrieved successfully",
+    meta: result.meta,
+    data: result.data,
+  });
+});
+
+const getAllProductsAdminController = catchAsync(async (req: Request, res: Response) => {
   const result = await getAllProductsFromDBService(req.query);
 
   sendResponse(res, {
@@ -101,4 +114,5 @@ export {
   updateProductController,
   deleteProductController,
   toggleFeaturedController,
+  getAllProductsAdminController,
 };

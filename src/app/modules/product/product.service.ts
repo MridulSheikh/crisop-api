@@ -90,7 +90,7 @@ const getAllProductsFromDBService = async (
       .populate('category', 'name'),
     query,
   )
-    .search(['name', 'description'])
+    .search(['name', 'description', 'tags'])
     .filter()
     .fields()
     .sort()
@@ -128,7 +128,7 @@ const getSingleProductFromDBService = async (id: string) => {
     { _id: id, isDeleted: { $ne: true } },
     { isDeleted: 0, __v: 0 },
   )
-    .populate('stock', 'quantity warehouse')
+    .populate('stock', 'quantity warehouse unit')
     .populate('category', 'name');
 
   if (!result) {

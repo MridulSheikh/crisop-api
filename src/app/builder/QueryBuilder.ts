@@ -10,18 +10,25 @@ class QueryBuilder<T> {
   }
 
   search(searchablefields: string[]) {
-    const searchTerm = this?.query?.searchTerm;
+    const searchTerm =
+      typeof this.query.searchTerm === 'string' ? this.query.searchTerm : undefined;
+
     if (searchTerm) {
+      // Escape special regex characters to prevent MongoDB errors
+      const escapedSearchTerm = searchTerm.replace(
+        /[.*+?^${}()|[\]\\]/g,
+        '\\$&',
+      );
+
       this.modelQuery = this.modelQuery.find({
         $or: searchablefields.map((field) => ({
-          [field]: { $regex: searchTerm, $options: 'i' },
+          [field]: { $regex: escapedSearchTerm, $options: 'i' },
         })),
       });
     }
 
     return this;
   }
-
   filter() {
     const queryObj = { ...this.query };
 

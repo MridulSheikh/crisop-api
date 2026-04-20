@@ -35,7 +35,6 @@ router
 router
   .route('/:id')
   .get(
-    auth(UserRole.admin, UserRole.manager, UserRole.super, UserRole.user),
     getSingleProductController,
   )
   .patch(

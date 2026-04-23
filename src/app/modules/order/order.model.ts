@@ -8,7 +8,6 @@ const orderItemSchema = new Schema<IOrderItem>(
     product: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
     quantity: { type: Number, required: true },
     price: { type: Number, required: true },
-    discountPrice: { type: Number, required: true },
   },
   { _id: false }
 );
@@ -22,9 +21,11 @@ const orderSchema = new Schema<IOrder>(
       type: {
         type: String,
         enum: ['Standard', '24h', '3d'],
-        required: true,
+        default: 'Standard',
       },
       contact: { type: String, required: true },
+      division: {type: String, required: true},
+      email: {type: String, required: true}
     },
     items: { type: [orderItemSchema], required: true },
     status: {
@@ -33,6 +34,12 @@ const orderSchema = new Schema<IOrder>(
       default: 'pending',
     },
     isCancel: { type: Boolean, default: false },
+    isCod: {type: Boolean, default: false},
+    isPaymentComplete: {type: Boolean, default: false},
+    total : {
+      type: Number,
+      required: true
+    }
   },
   { timestamps: true }
 );

@@ -5,7 +5,6 @@ export interface IOrderItem {
   product: Types.ObjectId;       
   quantity: number;
   price: number;
-  discountPrice: number;
 }
 
 // Interface for the whole order
@@ -16,8 +15,13 @@ export interface IOrder extends Document {
     addressOneLine: string;
     type: 'Standard' | '24h' | '3d';
     contact: string;
+    email: string;
+    division: string;
   };
   items: IOrderItem[];
   status: 'pending' | 'packing' | 'shipped' | 'delivered'; 
   isCancel: boolean;
+  isCod: boolean;
+  isPaymentComplete: boolean;
+  total: number;
 }

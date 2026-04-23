@@ -12,6 +12,10 @@ export const createOrderIntoDbSerivce = async (
        // create order id
        payload.orderId = `ORD-${nanoid(10)}`;
        payload.customer = userId;
+
+       if(!payload.isCod && !payload.isPaymentComplete){
+              throw new AppError(httpStatus.BAD_REQUEST, "Please make payment!")
+       }
        const result = await Order.create(payload);
        return result;
 };
@@ -49,7 +53,43 @@ export const toggleOrderStatus = async (_id: string, status: string) => {
 
 
 // get all order from db
+export const getMyOrderFromDbServices = async (userId: string) => {
+  const result = await Order.find({
+    customer: new Types.ObjectId(userId),
+  })
+    .populate("items.product")
+    .sort({ createdAt: -1 });
 
-export const getAllOrderFromDB = async () => {
-       
-}
+  return result;
+};
+
+// cancel order
+export const canceledOrderServices = async (orderId: string) => {
+  const order = await Order.findById(orderId);
+
+  // order not found
+  if (!order) {
+    throw new AppError(httpStatus.NOT_FOUND, "Order not found");
+  }
+
+  // already cancelled
+  if (order.isCancel) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Order already cancelled");
+  }
+
+  // prevent cancel after shipping
+  if (["shipped", "delivered"].includes(order.status)) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Cannot cancel after order is shipped or delivered"
+    );
+  }
+
+  const result = await Order.findByIdAndUpdate(
+    orderId,
+    { isCancel: true, status: "pending" }, // optional status lock
+    { new: true } // return updated doc
+  );
+
+  return result;
+};

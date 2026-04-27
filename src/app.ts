@@ -17,7 +17,12 @@ const client_url =
 // Middleware: JSON and cookie parser
 app.use(express.json());
 app.use(cookieParser());
-
+app.use(
+  cors({
+    origin: "http://localhost:3000",
+    credentials: true,
+  })
+);
 // Enable CORS with credentials
 app.use(
   cors({

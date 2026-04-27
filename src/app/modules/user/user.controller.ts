@@ -24,9 +24,17 @@ const loginUserController = catchAsync(async (req: Request, res: Response) => {
     await userService.loginUserService(data);
 
   res.cookie('refreshToken', refreshToken, {
-    secure: config.NODE_ENV === 'production' ,
+    secure: config.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 30*24*60*60*1000
+    path: '/',
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+  });
+
+  res.cookie('accessToken', accessToken, {
+    secure: config.NODE_ENV === 'production',
+    httpOnly: true,
+    path: '/',
+    maxAge: 3 * 60 * 60 * 1000,
   });
 
   sendResponse(res, {
@@ -59,6 +67,16 @@ const refreshTokenController = catchAsync(
   async (req: Request, res: Response) => {
     const { refreshToken } = req.cookies;
     const result = await userService.refreshTokenService(refreshToken);
+    res.cookie(
+      'accessToken',
+      result.accessToken,
+      {
+        secure: config.NODE_ENV === 'production',
+        httpOnly: true,
+        maxAge: 3 * 60 * 60 * 1000,
+        path: '/',
+      },
+    );
     sendResponse(res, {
       success: true,
       message: 'Successfully token refreshed',
@@ -104,8 +122,16 @@ const handleOAuthController = catchAsync(
     res.cookie('refreshToken', refreshToken, {
       secure: config.NODE_ENV === 'production' ? true : false,
       httpOnly: true,
-      maxAge: 30*24*60*60*1000
+      path: '/',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
     });
+    res.cookie('accessToken', accessToken, {
+      secure: config.NODE_ENV === 'production',
+      httpOnly: true,
+      path: '/',
+      maxAge: 3 * 60 * 60 * 1000,
+    });
+
     sendResponse(res, {
       success: true,
       message: 'Successfully logged in account',
@@ -159,17 +185,17 @@ const changeUserRoleController = catchAsync(
 
 // add team member
 const addTeamMemberController = catchAsync(
-  async(req: Request, res: Response) =>{
-      const {email, role}= req.body;
-      const result = await userService.AddTeamMemberServices(email, role);
-      sendResponse(res, {
-        success: true,
-        message: "Team member hasbeen added",
-        data: result,
-        statusCode: httpStatus.OK
-      })
-  }
-)
+  async (req: Request, res: Response) => {
+    const { email, role } = req.body;
+    const result = await userService.AddTeamMemberServices(email, role);
+    sendResponse(res, {
+      success: true,
+      message: 'Team member hasbeen added',
+      data: result,
+      statusCode: httpStatus.OK,
+    });
+  },
+);
 
 const getAllUserFromDB = catchAsync(async (req: Request, res: Response) => {
   const query = { ...req.query };
@@ -184,6 +210,24 @@ const getAllUserFromDB = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const logOutMeController = catchAsync(async (req: Request, res: Response) => {
+  const cookieOptions = {
+    httpOnly: true,
+    secure: config.NODE_ENV === 'production',
+    sameSite: 'lax' as const,
+    path: '/',
+  };
+
+  res.clearCookie('accessToken', cookieOptions);
+  res.clearCookie('refreshToken', cookieOptions);
+
+  sendResponse(res, {
+    success: true,
+    message: 'Successfully Logout users',
+    data: null,
+    statusCode: httpStatus.OK,
+  });
+});
 
 const userController = {
   forgetPasswordController,
@@ -197,7 +241,8 @@ const userController = {
   verfiyCodeController,
   changeUserRoleController,
   getAllUserFromDB,
-  addTeamMemberController
+  addTeamMemberController,
+  logOutMeController,
 };
 
 export default userController;

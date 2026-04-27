@@ -23,6 +23,7 @@ Router.route("/change-role")
 .post(auth(UserRole.admin,UserRole.super), userController.changeUserRoleController)
 Router.route("/add-member")
 .post(auth(UserRole.admin, UserRole.super), userController.addTeamMemberController)
+Router.route("/logout-me").post(userController.logOutMeController)
 
 // Router.route("/email-verification/:email")
 // .post(userController.createVerificationCodeController)

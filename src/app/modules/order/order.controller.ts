@@ -3,6 +3,7 @@ import catchAsync from '../../utils/catchAsync';
 import {
   canceledOrderServices,
   createOrderIntoDbSerivce,
+  getAllOrderFromdbServices,
   getMyOrderFromDbServices,
   toggleOrderStatus,
 } from './order.service';
@@ -57,6 +58,19 @@ export const canceledOrderController = catchAsync(
       success: true,
       statusCode: httpStatus.OK,
       message: `Order Canceled successfully`,
+      data: result,
+    });
+  }
+)
+
+export const getAllOrderFromDBController = catchAsync(
+  async(req: Request, res: Response) => {
+     const result = await getAllOrderFromdbServices(req.query)
+
+     sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: `Order Retrived successfully`,
       data: result,
     });
   }

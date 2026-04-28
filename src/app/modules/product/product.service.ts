@@ -74,7 +74,7 @@ const getAllProductsFromDBService = async (
   query: Record<string, unknown>,
   options?: { onlyPublished?: boolean }
 ) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
   const baseFilter: any = {
     isDeleted: { $ne: true },
   };

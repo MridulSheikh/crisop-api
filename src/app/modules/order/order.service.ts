@@ -1,4 +1,4 @@
-import { Types } from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import { IOrder } from './order.interface';
 import { Order } from './order.model';
 import { nanoid } from 'nanoid';
@@ -36,9 +36,19 @@ export const toggleOrderStatus = async (_id: string, status: string) => {
     );
   }
 
+  // update payload dynamically
+  const updatePayload: any = {
+    status,
+  };
+
+  // business rule
+  if (status === 'delivered') {
+    updatePayload.isPaymentComplete = true;
+  }
+
   const result = await Order.findByIdAndUpdate(
     _id,
-    { status },
+     updatePayload,
     { new: true, runValidators: true },
   );
 
@@ -104,7 +114,12 @@ export const getAllOrderFromdbServices = async (
   const orderQuery = new QueryBuilder(
     Order.find(baseFilter).populate('items.product'),
     query,
-  );
+  )
+    .search(['orderId', 'shippingInfo.email'])
+    .filter()
+    .fields()
+    .sort()
+    .paginate();
 
   const result = await orderQuery.modelQuery;
 
@@ -114,13 +129,32 @@ export const getAllOrderFromdbServices = async (
   const limit = Math.max(1, Number(query.limit) || 10);
   const totalPages = Math.ceil(total / limit);
 
-  return{
-       meta: {
-              total,
-              page,
-              limit,
-              totalPages
-       }, 
-       data: result,
+  return {
+    meta: {
+      total,
+      page,
+      limit,
+      totalPages,
+    },
+    items: result,
+  };
+};
+
+export const getSingleOrder = async (id: string) => {
+  // Validate MongoDB ObjectId
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    throw new AppError(400, 'Invalid order id');
   }
+
+  // Find order
+  const order = await Order.findById(id)
+    .populate('items.product') // optional (if needed)
+    .lean();
+
+  // Check existence
+  if (!order) {
+    throw new AppError(404, 'Order not found');
+  }
+
+  return order;
 };

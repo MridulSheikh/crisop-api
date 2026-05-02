@@ -5,6 +5,7 @@ import {
   createOrderIntoDbSerivce,
   getAllOrderFromdbServices,
   getMyOrderFromDbServices,
+  getSingleOrder,
   toggleOrderStatus,
 } from './order.service';
 import sendResponse from '../../utils/sendResponse';
@@ -73,5 +74,17 @@ export const getAllOrderFromDBController = catchAsync(
       message: `Order Retrived successfully`,
       data: result,
     });
+  }
+)
+
+export const getSingleOrderFromDBController = catchAsync(
+  async(req: Request, res: Response)=>{
+    const result = await getSingleOrder(req.params.id)
+    sendResponse(res,{
+      success: true,
+      statusCode: httpStatus.OK,
+      message: 'Order Retrived successfully',
+      data: result
+    })
   }
 )

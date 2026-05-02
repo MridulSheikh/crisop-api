@@ -31,7 +31,6 @@ export const sendImageToCloudinary = async (
       public_id: result.public_id,
     };
   } catch (error) {
-    console.error("Cloudinary Upload Error:", error);
     throw new AppError(httpStatus.BAD_REQUEST,"Image upload failed");
   }
 };

@@ -2,8 +2,7 @@ import express from "express"
 import auth from "../../middlewares/auth";
 import validateRequest from "../../middlewares/validateRequest";
 import { createOrderSchema, toggleStatusValidationSchema } from "./oreder.validation";
-import { canceledOrderController, createOrderController, getAllOrderFromDBController, getMyOrderController } from "./order.controller";
-import { toggleFeaturedController } from "../product/product.controller";
+import { canceledOrderController, createOrderController, getAllOrderFromDBController, getMyOrderController, getSingleOrderFromDBController, toggleOrderStatusController } from "./order.controller";
 import { UserRole } from "../user/user.interface";
 
 const router = express.Router();
@@ -14,8 +13,10 @@ router.route("/").post(auth(UserRole.admin, UserRole.user, UserRole.manager, Use
 
 router.route("/my-orders").get(auth(UserRole.admin, UserRole.user, UserRole.manager, UserRole.super), getMyOrderController)
 
-router.route("/toggle")
-.patch(auth("admin", "manager", "user"), validateRequest(toggleStatusValidationSchema) , toggleFeaturedController)
+router.route("/toggle/:id")
+.patch(auth(UserRole.admin, UserRole.manager, UserRole.super), validateRequest(toggleStatusValidationSchema) , toggleOrderStatusController)
+
+router.route("/:id").get(auth(UserRole.admin, UserRole.manager, UserRole.super),getSingleOrderFromDBController)
 
 router.route("/:id/cancel").patch(auth(UserRole.admin, UserRole.user, UserRole.manager, UserRole.super), canceledOrderController)
 

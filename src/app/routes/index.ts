@@ -6,6 +6,8 @@ import warehouseRoute from "../modules/warehouse/warehouse.route"
 import productRoute from "../modules/product/product.route"
 import stockRoute from "../modules/stock/stock.route"
 import orderRoute from '../modules/order/order.route'
+import paymentRoute from "../modules/payment/payment.route"
+
 const router = Router();
 
 const modulesRutes = [
@@ -36,6 +38,10 @@ const modulesRutes = [
   {
     path: "/order",
     route: orderRoute,
+  },
+  {
+    path: '/payment',
+    route: paymentRoute
   }
 ];
 

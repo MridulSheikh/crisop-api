@@ -15,9 +15,7 @@ const handleCastError = (
     name: err.name,
     message: `Cast to ObjectId failed for value '${
       err.value
-    }' (type ${typeof err.value}) at path '${err.path}' for model '${
-      err.model.modelName
-    }'`,
+    }' (type ${typeof err.value}) at path '${err.path}'`,
   };
   const statusCode = 500;
   return {

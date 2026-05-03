@@ -25,7 +25,8 @@ const userSchema = new Schema<IUser, UserModel>(
     },
     password: {
       type: String,
-      required: function () {
+      // eslint-disable-next-line no-unused-vars
+      required: function (this: IUser) {
         return this.authProvider === "local"
       },
       select: 0,

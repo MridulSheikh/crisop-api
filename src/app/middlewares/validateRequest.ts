@@ -5,7 +5,7 @@ import config from '../config';
 
 
 const validateRequest = (schema: AnyZodObject) => {
-  return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  return catchAsync(async (req: Request, _res: Response, next: NextFunction) => {
     if (config.NODE_ENV === 'development') {
       // const mappedBody = Object.entries(req.body).map(([key, value]) => ({
       //   Field: key,

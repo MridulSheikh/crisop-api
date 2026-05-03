@@ -15,7 +15,7 @@ import User from '../modules/user/user.model';
 export type TUserRole = keyof typeof UserRole;
 
 const auth = (...requiredRoles: TUserRole[]) => {
-  return catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+  return catchAsync(async (req: Request, _res: Response, next: NextFunction) => {
     const authHeader = req.headers.authorization;
     const token = authHeader?.split(' ')[1];
 

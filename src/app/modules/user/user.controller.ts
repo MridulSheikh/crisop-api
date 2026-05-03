@@ -210,7 +210,7 @@ const getAllUserFromDB = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const logOutMeController = catchAsync(async (req: Request, res: Response) => {
+const logOutMeController = catchAsync(async (_req: Request, res: Response) => {
   const cookieOptions = {
     httpOnly: true,
     secure: config.NODE_ENV === 'production',

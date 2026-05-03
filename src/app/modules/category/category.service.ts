@@ -68,12 +68,12 @@ const updateOneCateogryIntoDBService = async (
     throw new AppError(httpStatus.NOT_FOUND, 'category not found');
   }
 
-  const result = await Category.updateOne({ _id: id }, payload, {
-    new: true, // returns the updated document
-    runValidators: true, // runs schema validators
+  const result = await Category.findOneAndUpdate({ _id: id }, payload, {
+    runValidators: true,
+    new: true,
   });
 
-  if (result.modifiedCount === 0) {
+  if (!result) {
     throw new AppError(httpStatus.BAD_REQUEST, 'category not updated');
   }
 

@@ -74,14 +74,14 @@ const loginUserService = async (payload: {
   const accessToken = createToken(
     jwtPayload,
     config.JWT_ACCESS_SECRET as string,
-    config.JWT_ACCESS_EXPIRES_ID as string,
+    config.JWT_ACCESS_EXPIRES_ID as any,
   );
 
   // create refresh token
   const refreshToken = createToken(
     jwtPayload,
     config.REFRESH_SECRET as string,
-    config.REFRESH_EXPIREIN as string,
+    config.REFRESH_EXPIREIN as any,
   );
 
   // return jwt token
@@ -139,7 +139,7 @@ const refreshTokenService = async (token: string) => {
   const accessToken = createToken(
     jwtPayload,
     config.JWT_ACCESS_SECRET as string,
-    config.JWT_ACCESS_EXPIRES_ID as string,
+    config.JWT_ACCESS_EXPIRES_ID as any,
   );
 
   return {
@@ -167,7 +167,7 @@ const forgotPassowrdService = async (email: string) => {
   const forgotPasswordToken = createToken(
     jwtPayload,
     config.JWT_RESETPASSWORD_TOKEN_SECRET as string,
-    config.JWT_RESETPASSWORD_TOKEN_EXPIREIN as string,
+    config.JWT_RESETPASSWORD_TOKEN_EXPIREIN as any,
   );
 
   // make reset password link
@@ -292,14 +292,14 @@ const handleOAuthService = async (token: string, method: string) => {
   const accessToken = createToken(
     jwtPayload,
     config.JWT_ACCESS_SECRET as string,
-    config.JWT_ACCESS_EXPIRES_ID as string,
+    config.JWT_ACCESS_EXPIRES_ID as any,
   );
 
   // create refresh token
   const refreshToken = createToken(
     jwtPayload,
     config.REFRESH_SECRET as string,
-    config.REFRESH_EXPIREIN as string,
+    config.REFRESH_EXPIREIN as any,
   );
 
   return {
@@ -395,14 +395,14 @@ const verifyEmailSerivce = async (email: string, code: string) => {
   const accessToken = createToken(
     jwtPayload,
     config.JWT_ACCESS_SECRET as string,
-    config.JWT_ACCESS_EXPIRES_ID as string,
+    config.JWT_ACCESS_EXPIRES_ID as any,
   );
 
   // create refresh token
   const refreshToken = createToken(
     jwtPayload,
     config.REFRESH_SECRET as string,
-    config.REFRESH_EXPIREIN as string,
+    config.REFRESH_EXPIREIN as any,
   );
 
   return {

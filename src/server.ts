@@ -27,7 +27,7 @@ async function main() {
     // Verify SMTP once
     console.log(colors.yellow('📧 Verifying SMTP server...'));
     // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-    transporter.verify((error, success) => {
+    transporter.verify((error, _success) => {
       if (error) {
         console.log(colors.red('❌ SMTP server connection failed.'));
         console.error(error);

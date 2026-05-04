@@ -9,10 +9,7 @@ import config from './app/config';
 const app: Application = express();
 
 // Dynamically determine client URL
-const client_url =
-  config.NODE_ENV === 'development'
-    ? 'http://localhost:3000'
-    : (config.CLIENT_URL as string);
+const client_url = config.CLIENT_URL as string;
 
 // Middleware: JSON and cookie parser
 app.use(express.json());

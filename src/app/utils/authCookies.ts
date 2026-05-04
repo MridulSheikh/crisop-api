@@ -2,7 +2,7 @@ import { Response } from "express";
 
 const cookieOptions = {
   httpOnly: true,
-  secure: true,         
+  secure: false,         
   sameSite: "none" as const,
   path: "/",
 };

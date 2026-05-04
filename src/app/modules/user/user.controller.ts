@@ -67,16 +67,12 @@ const refreshTokenController = catchAsync(
   async (req: Request, res: Response) => {
     const { refreshToken } = req.cookies;
     const result = await userService.refreshTokenService(refreshToken);
-    res.cookie(
-      'accessToken',
-      result.accessToken,
-      {
-        secure: config.NODE_ENV === 'production',
-        httpOnly: true,
-        maxAge: 3 * 60 * 60 * 1000,
-        path: '/',
-      },
-    );
+    res.cookie('accessToken', result.accessToken, {
+      secure: config.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 3 * 60 * 60 * 1000,
+      path: '/',
+    });
     sendResponse(res, {
       success: true,
       message: 'Successfully token refreshed',
@@ -160,6 +156,19 @@ const createVerificationCodeController = catchAsync(
 const verfiyCodeController = catchAsync(async (req: Request, res: Response) => {
   const { email, code } = req.body;
   const result = await userService.verifyEmailSerivce(email, code);
+  const { accessToken, refreshToken } = result;
+  res.cookie('refreshToken', refreshToken, {
+    secure: config.NODE_ENV === 'production' ? true : false,
+    httpOnly: true,
+    path: '/',
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+  });
+  res.cookie('accessToken', accessToken, {
+    secure: config.NODE_ENV === 'production',
+    httpOnly: true,
+    path: '/',
+    maxAge: 3 * 60 * 60 * 1000,
+  });
   sendResponse(res, {
     success: true,
     message: 'user successfully verified',

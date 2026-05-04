@@ -16,10 +16,10 @@ exports.transporter = void 0;
 const nodemailer_1 = __importDefault(require("nodemailer"));
 const config_1 = __importDefault(require("../config"));
 exports.transporter = nodemailer_1.default.createTransport({
-    service: config_1.default.SMTP_SERVICE,
-    host: config_1.default.SMTP_HOST,
-    port: Number(config_1.default.SMTP_PORT),
-    secure: false,
+    host: config_1.default.SMTP_HOST, // smtp.gmail.com
+    port: Number(config_1.default.SMTP_PORT), // 587 or 465
+    secure: Number(config_1.default.SMTP_PORT) === 465, // auto adjust
+    family: 4, // 🔥 IMPORTANT: force IPv4 (fix ENETUNREACH)
     auth: {
         user: config_1.default.SMTP_EMAIL,
         pass: config_1.default.SMTP_PASS,

@@ -2,15 +2,15 @@ import nodemailer from 'nodemailer';
 import config from '../config';
 
 export const transporter = nodemailer.createTransport({
-  service: config.SMTP_SERVICE,
-  host: config.SMTP_HOST,
-  port: Number(config.SMTP_PORT),
-  secure: false,
+  host: config.SMTP_HOST, // smtp.gmail.com
+  port: Number(config.SMTP_PORT), // 587 or 465
+  secure: Number(config.SMTP_PORT) === 465, // auto adjust
+  family: 4, // 🔥 IMPORTANT: force IPv4 (fix ENETUNREACH)
   auth: {
     user: config.SMTP_EMAIL,
     pass: config.SMTP_PASS,
   },
-});
+} as any);
 
 const sendEmail = async (to: string, subject: string, body: string) => {
   const senderInfoData = {

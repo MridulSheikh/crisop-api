@@ -18,7 +18,7 @@ app.use(cookieParser());
 // Enable CORS with credentials
 app.use(
   cors({
-    origin: [client_url],
+    origin: client_url,
     credentials: true,
   })
 );

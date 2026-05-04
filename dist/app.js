@@ -18,7 +18,7 @@ app.use(express_1.default.json());
 app.use((0, cookie_parser_1.default)());
 // Enable CORS with credentials
 app.use((0, cors_1.default)({
-    origin: [client_url],
+    origin: client_url,
     credentials: true,
 }));
 // API routes

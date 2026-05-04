@@ -1,12 +1,10 @@
 import { Response } from "express";
-import config from "../config";
 
 const cookieOptions = {
   httpOnly: true,
   secure: true,         
   sameSite: "none" as const,
   path: "/",
-  domain: config.CLIENT_URL,
 };
 
 export const setAuthCookies = (

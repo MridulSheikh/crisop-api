@@ -2,8 +2,6 @@ import app from './app';
 import config from './app/config';
 import mongoose from 'mongoose';
 import { Server } from 'http';
-import { transporter } from './app/helpers/email';
-import AppError from './app/errors/AppError';
 import colors from 'colors';
 import dns from "dns";
 
@@ -24,21 +22,8 @@ async function main() {
     });
     console.log(colors.green('✅ Database connection successful.'));
 
-    // Verify SMTP once
-    console.log(colors.yellow('📧 Verifying SMTP server...'));
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-    transporter.verify((error, _success) => {
-      if (error) {
-        console.log(colors.red('❌ SMTP server connection failed.'));
-        console.error(error);
-        throw new AppError(403, 'SMTP server not connected!');
-      } else {
-        console.log(colors.green('✅ SMTP server is running.\n'));
-      }
-    });
-
     // Start server
-    server = app.listen(config.port, () => {
+    server = app.listen(config.port || 10000, () => {
       console.log(colors.bold.green('🎉 Crisop App Booted Successfully!\n'));
 
       console.group(colors.bold('🔧 Environment Details'));

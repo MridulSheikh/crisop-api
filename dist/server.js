@@ -15,8 +15,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const app_1 = __importDefault(require("./app"));
 const config_1 = __importDefault(require("./app/config"));
 const mongoose_1 = __importDefault(require("mongoose"));
-const email_1 = require("./app/helpers/email");
-const AppError_1 = __importDefault(require("./app/errors/AppError"));
 const colors_1 = __importDefault(require("colors"));
 const dns_1 = __importDefault(require("dns"));
 dns_1.default.setServers(["1.1.1.1", "8.8.8.8"]);
@@ -33,21 +31,8 @@ function main() {
                 family: 4
             });
             console.log(colors_1.default.green('✅ Database connection successful.'));
-            // Verify SMTP once
-            console.log(colors_1.default.yellow('📧 Verifying SMTP server...'));
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-            email_1.transporter.verify((error, _success) => {
-                if (error) {
-                    console.log(colors_1.default.red('❌ SMTP server connection failed.'));
-                    console.error(error);
-                    throw new AppError_1.default(403, 'SMTP server not connected!');
-                }
-                else {
-                    console.log(colors_1.default.green('✅ SMTP server is running.\n'));
-                }
-            });
             // Start server
-            server = app_1.default.listen(config_1.default.port, () => {
+            server = app_1.default.listen(config_1.default.port || 10000, () => {
                 console.log(colors_1.default.bold.green('🎉 Crisop App Booted Successfully!\n'));
                 console.group(colors_1.default.bold('🔧 Environment Details'));
                 console.log('📦 Mode  :', colors_1.default.bgBlue.white(` ${config_1.default.NODE_ENV.toUpperCase()} `));

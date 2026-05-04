@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.clearAuthCookies = exports.setAuthCookies = void 0;
 const cookieOptions = {
     httpOnly: true,
-    secure: false,
+    secure: true,
     sameSite: "none",
     path: "/",
 };

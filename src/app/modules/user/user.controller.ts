@@ -3,7 +3,7 @@ import catchAsync from '../../utils/catchAsync';
 import userService from './user.service';
 import sendResponse from '../../utils/sendResponse';
 import httpStatus from 'http-status';
-import config from '../../config';
+import { clearAuthCookies, setAuthCookies } from '../../utils/authCookies';
 
 const createUserIntoDatabseController = catchAsync(
   async (req: Request, res: Response) => {
@@ -22,20 +22,7 @@ const loginUserController = catchAsync(async (req: Request, res: Response) => {
   const data = req.body;
   const { accessToken, refreshToken } =
     await userService.loginUserService(data);
-
-  res.cookie('refreshToken', refreshToken, {
-    secure: config.NODE_ENV === 'production',
-    httpOnly: true,
-    path: '/',
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-  });
-
-  res.cookie('accessToken', accessToken, {
-    secure: config.NODE_ENV === 'production',
-    httpOnly: true,
-    path: '/',
-    maxAge: 3 * 60 * 60 * 1000,
-  });
+  setAuthCookies(res, { accessToken, refreshToken });
 
   sendResponse(res, {
     success: true,
@@ -67,12 +54,10 @@ const refreshTokenController = catchAsync(
   async (req: Request, res: Response) => {
     const { refreshToken } = req.cookies;
     const result = await userService.refreshTokenService(refreshToken);
-    res.cookie('accessToken', result.accessToken, {
-      secure: config.NODE_ENV === 'production',
-      httpOnly: true,
-      maxAge: 3 * 60 * 60 * 1000,
-      path: '/',
+    setAuthCookies(res, {
+      accessToken: result.accessToken,
     });
+
     sendResponse(res, {
       success: true,
       message: 'Successfully token refreshed',
@@ -115,18 +100,7 @@ const handleOAuthController = catchAsync(
       token,
       method,
     );
-    res.cookie('refreshToken', refreshToken, {
-      secure: config.NODE_ENV === 'production' ? true : false,
-      httpOnly: true,
-      path: '/',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-    });
-    res.cookie('accessToken', accessToken, {
-      secure: config.NODE_ENV === 'production',
-      httpOnly: true,
-      path: '/',
-      maxAge: 3 * 60 * 60 * 1000,
-    });
+    setAuthCookies(res, { accessToken, refreshToken });
 
     sendResponse(res, {
       success: true,
@@ -157,18 +131,7 @@ const verfiyCodeController = catchAsync(async (req: Request, res: Response) => {
   const { email, code } = req.body;
   const result = await userService.verifyEmailSerivce(email, code);
   const { accessToken, refreshToken } = result;
-  res.cookie('refreshToken', refreshToken, {
-    secure: config.NODE_ENV === 'production' ? true : false,
-    httpOnly: true,
-    path: '/',
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-  });
-  res.cookie('accessToken', accessToken, {
-    secure: config.NODE_ENV === 'production',
-    httpOnly: true,
-    path: '/',
-    maxAge: 3 * 60 * 60 * 1000,
-  });
+  setAuthCookies(res, { accessToken, refreshToken });
   sendResponse(res, {
     success: true,
     message: 'user successfully verified',
@@ -220,15 +183,7 @@ const getAllUserFromDB = catchAsync(async (req: Request, res: Response) => {
 });
 
 const logOutMeController = catchAsync(async (_req: Request, res: Response) => {
-  const cookieOptions = {
-    httpOnly: true,
-    secure: config.NODE_ENV === 'production',
-    sameSite: 'lax' as const,
-    path: '/',
-  };
-
-  res.clearCookie('accessToken', cookieOptions);
-  res.clearCookie('refreshToken', cookieOptions);
+  clearAuthCookies(res);
 
   sendResponse(res, {
     success: true,

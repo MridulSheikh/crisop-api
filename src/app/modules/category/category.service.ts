@@ -97,10 +97,19 @@ const deleCateogryService = async (id: string) => {
   return result;
 };
 
+const getCategoryIdByNameServices = async (name: string) => {
+  const category = await Category.findOne({
+    name: { $regex: name, $options: "i" },
+  });
+
+  return category?._id || null;
+};
+
 export {
   getAllCategoryFromDBService,
   createCategoryIntoDBService,
   updateOneCateogryIntoDBService,
   deleCateogryService,
   getSingleCategoryFromDbService,
+  getCategoryIdByNameServices
 };

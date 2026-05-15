@@ -12,7 +12,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getSingleCategoryFromDbService = exports.deleCateogryService = exports.updateOneCateogryIntoDBService = exports.createCategoryIntoDBService = exports.getAllCategoryFromDBService = void 0;
+exports.getCategoryIdByNameServices = exports.getSingleCategoryFromDbService = exports.deleCateogryService = exports.updateOneCateogryIntoDBService = exports.createCategoryIntoDBService = exports.getAllCategoryFromDBService = void 0;
 const http_status_1 = __importDefault(require("http-status"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const category_model_1 = __importDefault(require("./category.model"));
@@ -84,3 +84,10 @@ const deleCateogryService = (id) => __awaiter(void 0, void 0, void 0, function* 
     return result;
 });
 exports.deleCateogryService = deleCateogryService;
+const getCategoryIdByNameServices = (name) => __awaiter(void 0, void 0, void 0, function* () {
+    const category = yield category_model_1.default.findOne({
+        name: { $regex: name, $options: "i" },
+    });
+    return (category === null || category === void 0 ? void 0 : category._id) || null;
+});
+exports.getCategoryIdByNameServices = getCategoryIdByNameServices;

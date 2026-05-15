@@ -12,6 +12,7 @@ const product_route_1 = __importDefault(require("../modules/product/product.rout
 const stock_route_1 = __importDefault(require("../modules/stock/stock.route"));
 const order_route_1 = __importDefault(require("../modules/order/order.route"));
 const payment_route_1 = __importDefault(require("../modules/payment/payment.route"));
+const chatBot_route_1 = __importDefault(require("../modules/chat-bot/chatBot.route"));
 const router = (0, express_1.Router)();
 const modulesRutes = [
     {
@@ -45,6 +46,10 @@ const modulesRutes = [
     {
         path: '/payment',
         route: payment_route_1.default
+    },
+    {
+        path: '/chatBot',
+        route: chatBot_route_1.default
     }
 ];
 modulesRutes.forEach((route) => router.use(route.path, route.route));

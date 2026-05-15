@@ -28,5 +28,6 @@ exports.default = {
     CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
     CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
     STRIPE_SECTRET_KEY: process.env.STRIPE_SECRET_KEY,
-    RESEND_API: process.env.RESEND_API_KEY
+    RESEND_API: process.env.RESEND_API_KEY,
+    GROQ_API_KEY: process.env.GROQ_API_KEY
 };

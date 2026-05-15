@@ -20,7 +20,7 @@ class QueryBuilder {
     }
     filter() {
         const queryObj = Object.assign({}, this.query);
-        //Filtering
+        // Filtering
         const excludeFields = [
             'searchTerm',
             'sort',
@@ -28,12 +28,27 @@ class QueryBuilder {
             'page',
             'fields',
             'role',
+            'minPrice',
+            'maxPrice',
         ];
         excludeFields.forEach((el) => delete queryObj[el]);
+        // Category filter
         if (queryObj.category) {
             queryObj.category = {
                 $in: queryObj.category.split(','),
             };
+        }
+        // Price filter ⭐ NEW
+        const minPrice = Number(this.query.minPrice);
+        const maxPrice = Number(this.query.maxPrice);
+        if (!isNaN(minPrice) || !isNaN(maxPrice)) {
+            queryObj.discountPrice = {};
+            if (!isNaN(minPrice)) {
+                queryObj.discountPrice.$gte = minPrice;
+            }
+            if (!isNaN(maxPrice)) {
+                queryObj.discountPrice.$lte = maxPrice;
+            }
         }
         this.modelQuery = this.modelQuery.find(queryObj);
         return this;

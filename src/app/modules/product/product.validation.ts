@@ -20,6 +20,9 @@ const productBodySchema = z.object({
   category: z.string().refine((val) => mongoose.Types.ObjectId.isValid(val), {
     message: 'Invalid Category ID (must be ObjectId)',
   }),
+  brand: z.string().refine((val) => mongoose.Types.ObjectId.isValid(val), {
+    message: 'Invalid brand ID (must be ObjectId)',
+  }),
   tags: z.array(z.string().min(1)).optional(),
   isFeatured: booleanFromString.optional().default(false),
   isPublished: booleanFromString.optional().default(false),

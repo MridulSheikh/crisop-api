@@ -31,6 +31,6 @@ const brandSchema = new Schema<IBrand>(
   },
 );
 
-const Brand = model<IBrand>('Brand', brandSchema);
+const Brand = model<IBrand>('brand', brandSchema);
 
 export default Brand;

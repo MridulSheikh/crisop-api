@@ -27,5 +27,5 @@ const brandSchema = new mongoose_1.Schema({
     timestamps: true,
     versionKey: false,
 });
-const Brand = (0, mongoose_1.model)('Brand', brandSchema);
+const Brand = (0, mongoose_1.model)('brand', brandSchema);
 exports.default = Brand;

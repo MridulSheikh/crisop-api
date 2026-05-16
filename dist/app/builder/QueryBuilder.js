@@ -6,7 +6,9 @@ class QueryBuilder {
         this.query = query;
     }
     search(searchablefields) {
-        const searchTerm = typeof this.query.searchTerm === 'string' ? this.query.searchTerm : undefined;
+        const searchTerm = typeof this.query.searchTerm === 'string'
+            ? this.query.searchTerm
+            : undefined;
         if (searchTerm) {
             // Escape special regex characters to prevent MongoDB errors
             const escapedSearchTerm = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -36,6 +38,12 @@ class QueryBuilder {
         if (queryObj.category) {
             queryObj.category = {
                 $in: queryObj.category.split(','),
+            };
+        }
+        // brand filter
+        if (queryObj.brand) {
+            queryObj.brand = {
+                $in: queryObj.brand.split(','),
             };
         }
         // Price filter ⭐ NEW

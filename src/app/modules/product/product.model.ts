@@ -37,6 +37,11 @@ const ProductSchema: Schema = new Schema(
       ref: 'Stock', // Reference to Stock model
       required: [true, 'Stock reference is required'],
     },
+    brand: {
+      type: Schema.Types.ObjectId,
+      ref: 'brand', // Reference to Stock model
+      required: [true, 'brand reference is required'],
+    },
     category: {
       type: Schema.Types.ObjectId,
       ref: 'Category', // Reference to Category model
@@ -59,7 +64,8 @@ const ProductSchema: Schema = new Schema(
       ],
       required: [true, 'At least one image is required'],
       validate: {
-        validator: (images: [{url: string, public_id: string}]) => images.length > 0,
+        validator: (images: [{ url: string; public_id: string }]) =>
+          images.length > 0,
         message: 'At least one image is required',
       },
     },

@@ -11,7 +11,8 @@ export interface IProductInterface extends Document {
     price: number;              
     discountPrice?: number;      
     stock: mongoose.Schema.Types.ObjectId;              
-    category: mongoose.Schema.Types.ObjectId;            
+    category: mongoose.Schema.Types.ObjectId;    
+    brand: mongoose.Schema.Types.ObjectId;         
     tags?: string[];            
     images: IImageInterface[];          
     isFeatured?: boolean; 

@@ -9,6 +9,7 @@ import QueryBuilder from '../../builder/QueryBuilder';
 import fs from 'fs';
 import { sendImageToCloudinary } from '../../utils/sendImageToCloudinary';
 import { v2 as cloudinary } from 'cloudinary';
+import Brand from '../brand/brand.model';
 
 // Create new product
 const createProductIntoDBService = async (
@@ -20,10 +21,12 @@ const createProductIntoDBService = async (
   if (!files || files.length === 0) {
     throw new AppError(httpStatus.BAD_REQUEST, 'Please Upload Product Image!');
   }
+
   // Validate references exist
-  const [stockExists, categoryExists] = await Promise.all([
+  const [stockExists, categoryExists, brandExists] = await Promise.all([
     Stock.findOne({ _id: payload.stock, isDeleted: { $ne: true } }),
     Category.findOne({ _id: payload.category, isDeleted: { $ne: true } }),
+    Brand.findOne({_id: payload.brand, isDeleted: {$ne: true}})
   ]);
 
   if (!stockExists) {
@@ -33,6 +36,12 @@ const createProductIntoDBService = async (
   if (!categoryExists) {
     throw new AppError(httpStatus.NOT_FOUND, 'Referenced category not found');
   }
+
+
+  if (!brandExists) {
+    throw new AppError(httpStatus.NOT_FOUND, 'Referenced brand not found');
+  }
+
 
   // Validate discount price
   if (payload.discountPrice && payload.discountPrice > payload.price) {
@@ -87,7 +96,8 @@ const getAllProductsFromDBService = async (
   const productQuery = new QueryBuilder(
     Product.find(baseFilter)
       .populate('stock', 'quantity warehouse unit')
-      .populate('category', 'name'),
+      .populate('category', 'name')
+      .populate('brand'),
     query,
   )
     .search(['name', 'description', 'tags'])
@@ -129,7 +139,8 @@ const getSingleProductFromDBService = async (id: string) => {
     { isDeleted: 0, __v: 0 },
   )
     .populate('stock', 'quantity warehouse unit')
-    .populate('category', 'name');
+    .populate('category', 'name')
+     .populate('brand');
 
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'Product not found');
@@ -191,6 +202,18 @@ const updateSingleProductInDBService = async (
     }
   }
 
+  // Brand Validation
+  if(updateData.brand){
+    const brandExists = await Brand.findOne({
+      _id: updateData.brand,
+      isDeleted: {$ne: true},
+    })
+
+    if(!brandExists){
+      throw new AppError(httpStatus.NOT_FOUND, 'Referenced Brand not found')
+    }
+  }
+
   // DISCOUNT VALIDATION
   if (updateData.discountPrice) {
     const basePrice = updateData.price ?? product.price;
@@ -243,7 +266,6 @@ const updateSingleProductInDBService = async (
 
     product.images.push(...uploadedImages);
   }
-
 
   // UPDATE OTHER FIELDS
   Object.assign(product, updateData);

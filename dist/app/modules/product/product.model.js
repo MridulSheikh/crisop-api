@@ -69,6 +69,11 @@ const ProductSchema = new mongoose_1.Schema({
         ref: 'Stock', // Reference to Stock model
         required: [true, 'Stock reference is required'],
     },
+    brand: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'brand', // Reference to Stock model
+        required: [true, 'brand reference is required'],
+    },
     category: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Category', // Reference to Category model

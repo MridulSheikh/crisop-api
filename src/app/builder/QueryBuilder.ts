@@ -11,7 +11,9 @@ class QueryBuilder<T> {
 
   search(searchablefields: string[]) {
     const searchTerm =
-      typeof this.query.searchTerm === 'string' ? this.query.searchTerm : undefined;
+      typeof this.query.searchTerm === 'string'
+        ? this.query.searchTerm
+        : undefined;
 
     if (searchTerm) {
       // Escape special regex characters to prevent MongoDB errors
@@ -29,51 +31,58 @@ class QueryBuilder<T> {
 
     return this;
   }
- 
+
   filter() {
-  const queryObj = { ...this.query };
+    const queryObj = { ...this.query };
 
-  // Filtering
-  const excludeFields = [
-    'searchTerm',
-    'sort',
-    'limit',
-    'page',
-    'fields',
-    'role',
-    'minPrice',
-    'maxPrice',
-  ];
+    // Filtering
+    const excludeFields = [
+      'searchTerm',
+      'sort',
+      'limit',
+      'page',
+      'fields',
+      'role',
+      'minPrice',
+      'maxPrice',
+    ];
 
-  excludeFields.forEach((el) => delete queryObj[el]);
+    excludeFields.forEach((el) => delete queryObj[el]);
 
-  // Category filter
-  if (queryObj.category) {
-    queryObj.category = {
-      $in: (queryObj.category as string).split(','),
-    };
-  }
-
-  // Price filter ⭐ NEW
-  const minPrice = Number(this.query.minPrice);
-  const maxPrice = Number(this.query.maxPrice);
-
-  if (!isNaN(minPrice) || !isNaN(maxPrice)) {
-    queryObj.discountPrice= {};
-
-    if (!isNaN(minPrice)) {
-      (queryObj.discountPrice as any).$gte = minPrice;
+    // Category filter
+    if (queryObj.category) {
+      queryObj.category = {
+        $in: (queryObj.category as string).split(','),
+      };
     }
 
-    if (!isNaN(maxPrice)) {
-      (queryObj.discountPrice as any).$lte = maxPrice;
+    // brand filter
+    if (queryObj.brand) {
+      queryObj.brand = {
+        $in: (queryObj.brand as string).split(','),
+      };
     }
+
+    // Price filter ⭐ NEW
+    const minPrice = Number(this.query.minPrice);
+    const maxPrice = Number(this.query.maxPrice);
+
+    if (!isNaN(minPrice) || !isNaN(maxPrice)) {
+      queryObj.discountPrice = {};
+
+      if (!isNaN(minPrice)) {
+        (queryObj.discountPrice as any).$gte = minPrice;
+      }
+
+      if (!isNaN(maxPrice)) {
+        (queryObj.discountPrice as any).$lte = maxPrice;
+      }
+    }
+
+    this.modelQuery = this.modelQuery.find(queryObj as FilterQuery<T>);
+
+    return this;
   }
-
-  this.modelQuery = this.modelQuery.find(queryObj as FilterQuery<T>);
-
-  return this;
-}
 
   sort() {
     const querySort = this?.query?.sort;

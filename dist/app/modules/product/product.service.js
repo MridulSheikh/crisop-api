@@ -34,6 +34,7 @@ const QueryBuilder_1 = __importDefault(require("../../builder/QueryBuilder"));
 const fs_1 = __importDefault(require("fs"));
 const sendImageToCloudinary_1 = require("../../utils/sendImageToCloudinary");
 const cloudinary_1 = require("cloudinary");
+const brand_model_1 = __importDefault(require("../brand/brand.model"));
 // Create new product
 const createProductIntoDBService = (payload, 
 // eslint-disable-next-line no-undef
@@ -43,15 +44,19 @@ files) => __awaiter(void 0, void 0, void 0, function* () {
         throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Please Upload Product Image!');
     }
     // Validate references exist
-    const [stockExists, categoryExists] = yield Promise.all([
+    const [stockExists, categoryExists, brandExists] = yield Promise.all([
         stock_model_1.default.findOne({ _id: payload.stock, isDeleted: { $ne: true } }),
         category_model_1.default.findOne({ _id: payload.category, isDeleted: { $ne: true } }),
+        brand_model_1.default.findOne({ _id: payload.brand, isDeleted: { $ne: true } })
     ]);
     if (!stockExists) {
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Referenced stock not found');
     }
     if (!categoryExists) {
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Referenced category not found');
+    }
+    if (!brandExists) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Referenced brand not found');
     }
     // Validate discount price
     if (payload.discountPrice && payload.discountPrice > payload.price) {
@@ -87,7 +92,8 @@ const getAllProductsFromDBService = (query, options) => __awaiter(void 0, void 0
     }
     const productQuery = new QueryBuilder_1.default(product_model_1.default.find(baseFilter)
         .populate('stock', 'quantity warehouse unit')
-        .populate('category', 'name'), query)
+        .populate('category', 'name')
+        .populate('brand'), query)
         .search(['name', 'description', 'tags'])
         .filter()
         .fields()
@@ -116,7 +122,8 @@ const getSingleProductFromDBService = (id) => __awaiter(void 0, void 0, void 0, 
     }
     const result = yield product_model_1.default.findOne({ _id: id, isDeleted: { $ne: true } }, { isDeleted: 0, __v: 0 })
         .populate('stock', 'quantity warehouse unit')
-        .populate('category', 'name');
+        .populate('category', 'name')
+        .populate('brand');
     if (!result) {
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Product not found');
     }
@@ -162,6 +169,16 @@ files) => __awaiter(void 0, void 0, void 0, function* () {
         });
         if (!categoryExists) {
             throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Referenced category not found');
+        }
+    }
+    // Brand Validation
+    if (updateData.brand) {
+        const brandExists = yield brand_model_1.default.findOne({
+            _id: updateData.brand,
+            isDeleted: { $ne: true },
+        });
+        if (!brandExists) {
+            throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Referenced Brand not found');
         }
     }
     // DISCOUNT VALIDATION

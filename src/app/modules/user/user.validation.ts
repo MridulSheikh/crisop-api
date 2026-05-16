@@ -45,11 +45,28 @@ const oAuthValidationSchema = z.object({
   })
 })
 
+const updateMyProfileValidationSchema = z.object({
+  body: z.object({
+    name: z.string().min(1).optional(),
+    email: z.string().email().optional(),
+    currentPassword: z.string().optional(),
+  }),
+});
+
+const changePasswordValidationSchema = z.object({
+  body: z.object({
+    currentPassword: z.string({ required_error: 'current password is required' }),
+    newPassword: z.string({ required_error: 'new password is required' }).min(8),
+  }),
+});
+
 export {
   forgetPasswordValidationSchema,
   CreateUserValidationSchema,
   UpdateUserValidatonSchema,
   LoginUserValidationSchema,
   resetPasswordValidationSchema,
-  oAuthValidationSchema
+  oAuthValidationSchema,
+  updateMyProfileValidationSchema,
+  changePasswordValidationSchema,
 };

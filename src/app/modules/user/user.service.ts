@@ -13,10 +13,12 @@ import path from 'path';
 import ejs from 'ejs';
 import sendEmail from '../../helpers/email';
 import bcrypt from 'bcrypt';
+import fs from 'fs';
 import { fetchGoogleUserInfo } from '../../utils/fetchGoogleUserInfo';
 import { fetchFacebookUserInfo } from '../../utils/fechFacebookUserInfo';
 import { generateVerificationCode } from '../../utils/generateVerificationCode';
 import QueryBuilder from '../../builder/QueryBuilder';
+import { sendImageToCloudinary } from '../../utils/sendImageToCloudinary';
 
 // create user into database
 const createUserIntoDatabaseService = async (payload: IUser) => {
@@ -67,6 +69,8 @@ const loginUserService = async (payload: {
     role: isUserExists.role,
     email: isUserExists.email,
     name: isUserExists.name,
+    image: isUserExists.image,
+    authProvider: isUserExists.authProvider,
   };
 
   // create token and sent to the client
@@ -133,6 +137,9 @@ const refreshTokenService = async (token: string) => {
     _id: user._id as mongoose.Types.ObjectId,
     role: user.role,
     email: user.email,
+    name: user.name,
+    image: user.image,
+    authProvider: user.authProvider,
   };
 
   // create refresh token
@@ -239,6 +246,147 @@ const resetPasswordServices = async (token: string, password: string) => {
   await ExpireResetPasswordLink.create({ token });
 };
 
+const createUserTokens = (user: IUser) => {
+  const jwtPayload = {
+    _id: user._id as mongoose.Types.ObjectId,
+    role: user.role,
+    email: user.email,
+    name: user.name,
+    image: user.image,
+    authProvider: user.authProvider,
+  };
+
+  const accessToken = createToken(
+    jwtPayload,
+    config.JWT_ACCESS_SECRET as string,
+    config.JWT_ACCESS_EXPIRES_ID as any,
+  );
+
+  const refreshToken = createToken(
+    jwtPayload,
+    config.REFRESH_SECRET as string,
+    config.REFRESH_EXPIREIN as any,
+  );
+
+  return { accessToken, refreshToken };
+};
+
+const updateMyProfileService = async (
+  requestEmail: string,
+  payload: { name?: string; email?: string; currentPassword?: string },
+  // eslint-disable-next-line no-undef
+  file?: Express.Multer.File,
+) => {
+  const user = await User.isUserExsitsByUserEmail(requestEmail);
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
+
+  const updateData: Partial<IUser> = {};
+
+  if (payload.name) {
+    updateData.name = payload.name;
+  }
+
+  if (payload.email && payload.email !== user.email) {
+    if (user.authProvider !== 'local') {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Email change is only available for email/password accounts',
+      );
+    }
+
+    if (!payload.currentPassword) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        'Current password is required to change email',
+      );
+    }
+
+    const isPasswordMatched = await User.isPasswordMatch(
+      payload.currentPassword,
+      user.password,
+    );
+
+    if (!isPasswordMatched) {
+      throw new AppError(httpStatus.UNAUTHORIZED, 'Current password is wrong');
+    }
+
+    const emailOwner = await User.findOne({ email: payload.email });
+
+    if (emailOwner) {
+      throw new AppError(httpStatus.CONFLICT, 'This email already taken');
+    }
+
+    updateData.email = payload.email;
+  }
+
+  if (file) {
+    const uploadedImage = await sendImageToCloudinary(file.path, {
+      folder: 'users',
+    });
+
+    updateData.image = uploadedImage.url;
+    fs.unlinkSync(file.path);
+  }
+
+  if (!Object.keys(updateData).length) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'No profile changes provided');
+  }
+
+  const updatedUser = await User.findOneAndUpdate(
+    { email: requestEmail },
+    updateData,
+    { new: true },
+  );
+
+  if (!updatedUser) {
+    throw new AppError(httpStatus.BAD_REQUEST, 'Profile not updated');
+  }
+
+  return {
+    user: updatedUser,
+    ...createUserTokens(updatedUser),
+  };
+};
+
+const changeMyPasswordService = async (
+  requestEmail: string,
+  payload: { currentPassword: string; newPassword: string },
+) => {
+  const user = await User.isUserExsitsByUserEmail(requestEmail);
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, 'User not found!');
+  }
+
+  if (user.authProvider !== 'local') {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      'Password change is only available for email/password accounts',
+    );
+  }
+
+  const isPasswordMatched = await User.isPasswordMatch(
+    payload.currentPassword,
+    user.password,
+  );
+
+  if (!isPasswordMatched) {
+    throw new AppError(httpStatus.UNAUTHORIZED, 'Current password is wrong');
+  }
+
+  const hashedPassword = await bcrypt.hash(payload.newPassword, 10);
+
+  await User.findOneAndUpdate(
+    { email: requestEmail },
+    { password: hashedPassword },
+  );
+
+  return null;
+};
+
 // Oauth login
 const handleOAuthService = async (token: string, method: string) => {
   let oauthUser;
@@ -286,6 +434,8 @@ const handleOAuthService = async (token: string, method: string) => {
     role: user.role,
     email: user.email,
     name: user.name,
+    image: user.image,
+    authProvider: user.authProvider,
   };
 
   // generate jwt token
@@ -388,6 +538,8 @@ const verifyEmailSerivce = async (email: string, code: string) => {
     role: verified.role,
     email: verified.email,
     name: verified.name,
+    image: verified.image,
+    authProvider: verified.authProvider,
   };
 
   // create token and sent to the client
@@ -516,6 +668,8 @@ const userService = {
   verifyEmailSerivce,
   getAlluserFromDB,
   AddTeamMemberServices,
+  updateMyProfileService,
+  changeMyPasswordService,
 };
 
 export default userService;

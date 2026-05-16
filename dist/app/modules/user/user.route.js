@@ -10,6 +10,7 @@ const validateRequest_1 = __importDefault(require("../../middlewares/validateReq
 const user_validation_1 = require("./user.validation");
 const auth_1 = __importDefault(require("../../middlewares/auth"));
 const user_interface_1 = require("./user.interface");
+const sendImageToCloudinary_1 = require("../../utils/sendImageToCloudinary");
 const Router = express_1.default.Router();
 Router.route("/create")
     .post((0, validateRequest_1.default)(user_validation_1.CreateUserValidationSchema), user_controller_1.default.createUserIntoDatabseController);
@@ -28,6 +29,10 @@ Router.route("/change-role")
 Router.route("/add-member")
     .post((0, auth_1.default)(user_interface_1.UserRole.admin, user_interface_1.UserRole.super), user_controller_1.default.addTeamMemberController);
 Router.route("/logout-me").post(user_controller_1.default.logOutMeController);
+Router.route("/me")
+    .patch((0, auth_1.default)(user_interface_1.UserRole.admin, user_interface_1.UserRole.user, user_interface_1.UserRole.manager, user_interface_1.UserRole.super), sendImageToCloudinary_1.upload.single("image"), (0, validateRequest_1.default)(user_validation_1.updateMyProfileValidationSchema), user_controller_1.default.updateMyProfileController);
+Router.route("/change-password")
+    .patch((0, auth_1.default)(user_interface_1.UserRole.admin, user_interface_1.UserRole.user, user_interface_1.UserRole.manager, user_interface_1.UserRole.super), (0, validateRequest_1.default)(user_validation_1.changePasswordValidationSchema), user_controller_1.default.changeMyPasswordController);
 // Router.route("/email-verification/:email")
 // .post(userController.createVerificationCodeController)
 Router.route('/verify').post(user_controller_1.default.verfiyCodeController);

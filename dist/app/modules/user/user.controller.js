@@ -82,6 +82,33 @@ const resetPasswordContorller = (0, catchAsync_1.default)((req, res) => __awaite
         statusCode: http_status_1.default.OK,
     });
 }));
+const updateMyProfileController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield user_service_1.default.updateMyProfileService(req.user.email, req.body, 
+    // eslint-disable-next-line no-undef
+    req.file);
+    (0, authCookies_1.setAuthCookies)(res, {
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+    });
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        message: 'Successfully updated profile',
+        data: {
+            accessToken: result.accessToken,
+            user: result.user,
+        },
+        statusCode: http_status_1.default.OK,
+    });
+}));
+const changeMyPasswordController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    yield user_service_1.default.changeMyPasswordService(req.user.email, req.body);
+    (0, sendResponse_1.default)(res, {
+        success: true,
+        message: 'Successfully changed password',
+        data: null,
+        statusCode: http_status_1.default.OK,
+    });
+}));
 const handleOAuthController = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { accessToken: token, method } = req.body;
     const { accessToken, refreshToken } = yield user_service_1.default.handleOAuthService(token, method);
@@ -173,5 +200,7 @@ const userController = {
     getAllUserFromDB,
     addTeamMemberController,
     logOutMeController,
+    updateMyProfileController,
+    changeMyPasswordController,
 };
 exports.default = userController;

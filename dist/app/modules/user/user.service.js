@@ -55,10 +55,12 @@ const path_1 = __importDefault(require("path"));
 const ejs_1 = __importDefault(require("ejs"));
 const email_1 = __importDefault(require("../../helpers/email"));
 const bcrypt_1 = __importDefault(require("bcrypt"));
+const fs_1 = __importDefault(require("fs"));
 const fetchGoogleUserInfo_1 = require("../../utils/fetchGoogleUserInfo");
 const fechFacebookUserInfo_1 = require("../../utils/fechFacebookUserInfo");
 const generateVerificationCode_1 = require("../../utils/generateVerificationCode");
 const QueryBuilder_1 = __importDefault(require("../../builder/QueryBuilder"));
+const sendImageToCloudinary_1 = require("../../utils/sendImageToCloudinary");
 // create user into database
 const createUserIntoDatabaseService = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     // is user exists on database
@@ -95,6 +97,8 @@ const loginUserService = (payload) => __awaiter(void 0, void 0, void 0, function
         role: isUserExists.role,
         email: isUserExists.email,
         name: isUserExists.name,
+        image: isUserExists.image,
+        authProvider: isUserExists.authProvider,
     };
     // create token and sent to the client
     const accessToken = (0, user_utils_1.createToken)(jwtPayload, config_1.default.JWT_ACCESS_SECRET, config_1.default.JWT_ACCESS_EXPIRES_ID);
@@ -135,6 +139,9 @@ const refreshTokenService = (token) => __awaiter(void 0, void 0, void 0, functio
         _id: user._id,
         role: user.role,
         email: user.email,
+        name: user.name,
+        image: user.image,
+        authProvider: user.authProvider,
     };
     // create refresh token
     const accessToken = (0, user_utils_1.createToken)(jwtPayload, config_1.default.JWT_ACCESS_SECRET, config_1.default.JWT_ACCESS_EXPIRES_ID);
@@ -194,6 +201,79 @@ const resetPasswordServices = (token, password) => __awaiter(void 0, void 0, voi
     // make jwt expire after one time use
     yield user_model_1.ExpireResetPasswordLink.create({ token });
 });
+const createUserTokens = (user) => {
+    const jwtPayload = {
+        _id: user._id,
+        role: user.role,
+        email: user.email,
+        name: user.name,
+        image: user.image,
+        authProvider: user.authProvider,
+    };
+    const accessToken = (0, user_utils_1.createToken)(jwtPayload, config_1.default.JWT_ACCESS_SECRET, config_1.default.JWT_ACCESS_EXPIRES_ID);
+    const refreshToken = (0, user_utils_1.createToken)(jwtPayload, config_1.default.REFRESH_SECRET, config_1.default.REFRESH_EXPIREIN);
+    return { accessToken, refreshToken };
+};
+const updateMyProfileService = (requestEmail, payload, 
+// eslint-disable-next-line no-undef
+file) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield user_model_1.default.isUserExsitsByUserEmail(requestEmail);
+    if (!user) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'User not found!');
+    }
+    const updateData = {};
+    if (payload.name) {
+        updateData.name = payload.name;
+    }
+    if (payload.email && payload.email !== user.email) {
+        if (user.authProvider !== 'local') {
+            throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Email change is only available for email/password accounts');
+        }
+        if (!payload.currentPassword) {
+            throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Current password is required to change email');
+        }
+        const isPasswordMatched = yield user_model_1.default.isPasswordMatch(payload.currentPassword, user.password);
+        if (!isPasswordMatched) {
+            throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, 'Current password is wrong');
+        }
+        const emailOwner = yield user_model_1.default.findOne({ email: payload.email });
+        if (emailOwner) {
+            throw new AppError_1.default(http_status_1.default.CONFLICT, 'This email already taken');
+        }
+        updateData.email = payload.email;
+    }
+    if (file) {
+        const uploadedImage = yield (0, sendImageToCloudinary_1.sendImageToCloudinary)(file.path, {
+            folder: 'users',
+        });
+        updateData.image = uploadedImage.url;
+        fs_1.default.unlinkSync(file.path);
+    }
+    if (!Object.keys(updateData).length) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'No profile changes provided');
+    }
+    const updatedUser = yield user_model_1.default.findOneAndUpdate({ email: requestEmail }, updateData, { new: true });
+    if (!updatedUser) {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Profile not updated');
+    }
+    return Object.assign({ user: updatedUser }, createUserTokens(updatedUser));
+});
+const changeMyPasswordService = (requestEmail, payload) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield user_model_1.default.isUserExsitsByUserEmail(requestEmail);
+    if (!user) {
+        throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'User not found!');
+    }
+    if (user.authProvider !== 'local') {
+        throw new AppError_1.default(http_status_1.default.BAD_REQUEST, 'Password change is only available for email/password accounts');
+    }
+    const isPasswordMatched = yield user_model_1.default.isPasswordMatch(payload.currentPassword, user.password);
+    if (!isPasswordMatched) {
+        throw new AppError_1.default(http_status_1.default.UNAUTHORIZED, 'Current password is wrong');
+    }
+    const hashedPassword = yield bcrypt_1.default.hash(payload.newPassword, 10);
+    yield user_model_1.default.findOneAndUpdate({ email: requestEmail }, { password: hashedPassword });
+    return null;
+});
 // Oauth login
 const handleOAuthService = (token, method) => __awaiter(void 0, void 0, void 0, function* () {
     let oauthUser;
@@ -227,6 +307,8 @@ const handleOAuthService = (token, method) => __awaiter(void 0, void 0, void 0, 
         role: user.role,
         email: user.email,
         name: user.name,
+        image: user.image,
+        authProvider: user.authProvider,
     };
     // generate jwt token
     const accessToken = (0, user_utils_1.createToken)(jwtPayload, config_1.default.JWT_ACCESS_SECRET, config_1.default.JWT_ACCESS_EXPIRES_ID);
@@ -289,6 +371,8 @@ const verifyEmailSerivce = (email, code) => __awaiter(void 0, void 0, void 0, fu
         role: verified.role,
         email: verified.email,
         name: verified.name,
+        image: verified.image,
+        authProvider: verified.authProvider,
     };
     // create token and sent to the client
     const accessToken = (0, user_utils_1.createToken)(jwtPayload, config_1.default.JWT_ACCESS_SECRET, config_1.default.JWT_ACCESS_EXPIRES_ID);
@@ -375,5 +459,7 @@ const userService = {
     verifyEmailSerivce,
     getAlluserFromDB,
     AddTeamMemberServices,
+    updateMyProfileService,
+    changeMyPasswordService,
 };
 exports.default = userService;

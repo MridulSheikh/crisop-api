@@ -1,9 +1,10 @@
 import  express from "express";
 import userController from "./user.controller";
 import validateRequest from "../../middlewares/validateRequest";
-import { CreateUserValidationSchema, forgetPasswordValidationSchema, LoginUserValidationSchema, oAuthValidationSchema, resetPasswordValidationSchema } from "./user.validation";
+import { changePasswordValidationSchema, CreateUserValidationSchema, forgetPasswordValidationSchema, LoginUserValidationSchema, oAuthValidationSchema, resetPasswordValidationSchema, updateMyProfileValidationSchema } from "./user.validation";
 import auth from "../../middlewares/auth";
 import { UserRole } from "./user.interface";
+import { upload } from "../../utils/sendImageToCloudinary";
 
 const Router = express.Router()
 
@@ -24,6 +25,19 @@ Router.route("/change-role")
 Router.route("/add-member")
 .post(auth(UserRole.admin, UserRole.super), userController.addTeamMemberController)
 Router.route("/logout-me").post(userController.logOutMeController)
+Router.route("/me")
+.patch(
+  auth(UserRole.admin, UserRole.user, UserRole.manager, UserRole.super),
+  upload.single("image"),
+  validateRequest(updateMyProfileValidationSchema),
+  userController.updateMyProfileController,
+)
+Router.route("/change-password")
+.patch(
+  auth(UserRole.admin, UserRole.user, UserRole.manager, UserRole.super),
+  validateRequest(changePasswordValidationSchema),
+  userController.changeMyPasswordController,
+)
 
 // Router.route("/email-verification/:email")
 // .post(userController.createVerificationCodeController)

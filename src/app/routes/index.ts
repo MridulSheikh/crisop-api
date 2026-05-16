@@ -8,6 +8,7 @@ import stockRoute from "../modules/stock/stock.route"
 import orderRoute from '../modules/order/order.route'
 import paymentRoute from "../modules/payment/payment.route"
 import chatBotRoute from "../modules/chat-bot/chatBot.route"
+import brandRoute from '../modules/brand/brand.route'
 
 const router = Router();
 
@@ -23,6 +24,10 @@ const modulesRutes = [
   {
     path: '/category',
     route: categoryRoute
+  },
+  {
+    path: '/brand',
+    route: brandRoute
   },
   {
     path: '/warehouse',

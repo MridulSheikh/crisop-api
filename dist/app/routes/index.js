@@ -13,6 +13,7 @@ const stock_route_1 = __importDefault(require("../modules/stock/stock.route"));
 const order_route_1 = __importDefault(require("../modules/order/order.route"));
 const payment_route_1 = __importDefault(require("../modules/payment/payment.route"));
 const chatBot_route_1 = __importDefault(require("../modules/chat-bot/chatBot.route"));
+const brand_route_1 = __importDefault(require("../modules/brand/brand.route"));
 const router = (0, express_1.Router)();
 const modulesRutes = [
     {
@@ -26,6 +27,10 @@ const modulesRutes = [
     {
         path: '/category',
         route: category_route_1.default
+    },
+    {
+        path: '/brand',
+        route: brand_route_1.default
     },
     {
         path: '/warehouse',

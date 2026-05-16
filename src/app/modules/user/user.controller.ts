@@ -93,6 +93,45 @@ const resetPasswordContorller = catchAsync(
   },
 );
 
+const updateMyProfileController = catchAsync(
+  async (req: Request, res: Response) => {
+    const result = await userService.updateMyProfileService(
+      req.user.email,
+      req.body,
+      // eslint-disable-next-line no-undef
+      req.file as Express.Multer.File | undefined,
+    );
+
+    setAuthCookies(res, {
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+    });
+
+    sendResponse(res, {
+      success: true,
+      message: 'Successfully updated profile',
+      data: {
+        accessToken: result.accessToken,
+        user: result.user,
+      },
+      statusCode: httpStatus.OK,
+    });
+  },
+);
+
+const changeMyPasswordController = catchAsync(
+  async (req: Request, res: Response) => {
+    await userService.changeMyPasswordService(req.user.email, req.body);
+
+    sendResponse(res, {
+      success: true,
+      message: 'Successfully changed password',
+      data: null,
+      statusCode: httpStatus.OK,
+    });
+  },
+);
+
 const handleOAuthController = catchAsync(
   async (req: Request, res: Response) => {
     const { accessToken: token, method } = req.body;
@@ -207,6 +246,8 @@ const userController = {
   getAllUserFromDB,
   addTeamMemberController,
   logOutMeController,
+  updateMyProfileController,
+  changeMyPasswordController,
 };
 
 export default userController;

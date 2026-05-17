@@ -25,7 +25,7 @@ Router.route("/reset-password")
 Router.route("/oauth")
     .post((0, validateRequest_1.default)(user_validation_1.oAuthValidationSchema), user_controller_1.default.handleOAuthController);
 Router.route("/change-role")
-    .post((0, auth_1.default)(user_interface_1.UserRole.admin, user_interface_1.UserRole.super), user_controller_1.default.changeUserRoleController);
+    .post((0, auth_1.default)(user_interface_1.UserRole.super), user_controller_1.default.changeUserRoleController);
 Router.route("/add-member")
     .post((0, auth_1.default)(user_interface_1.UserRole.admin, user_interface_1.UserRole.super), user_controller_1.default.addTeamMemberController);
 Router.route("/logout-me").post(user_controller_1.default.logOutMeController);

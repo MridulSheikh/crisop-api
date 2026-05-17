@@ -20,7 +20,7 @@ const router = express.Router();
 router
   .route('/')
   .post(
-    auth(UserRole.admin, UserRole.manager, UserRole.super),
+    auth(UserRole.admin, UserRole.super),
     upload.array('images', 5),
     validateRequest(createProductSchema),
     createProductController,
@@ -38,7 +38,7 @@ router
     getSingleProductController,
   )
   .patch(
-    auth(UserRole.admin, UserRole.manager, UserRole.super),
+    auth(UserRole.admin, UserRole.super),
     upload.array('newImages', 5),
     validateRequest(updateProductSchema),
     updateProductController,

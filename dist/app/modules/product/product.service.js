@@ -47,7 +47,7 @@ files) => __awaiter(void 0, void 0, void 0, function* () {
     const [stockExists, categoryExists, brandExists] = yield Promise.all([
         stock_model_1.default.findOne({ _id: payload.stock, isDeleted: { $ne: true } }),
         category_model_1.default.findOne({ _id: payload.category, isDeleted: { $ne: true } }),
-        brand_model_1.default.findOne({ _id: payload.brand, isDeleted: { $ne: true } })
+        brand_model_1.default.findOne({ _id: payload.brand, isDeleted: { $ne: true } }),
     ]);
     if (!stockExists) {
         throw new AppError_1.default(http_status_1.default.NOT_FOUND, 'Referenced stock not found');
@@ -91,7 +91,14 @@ const getAllProductsFromDBService = (query, options) => __awaiter(void 0, void 0
         baseFilter.isPublished = { $ne: false };
     }
     const productQuery = new QueryBuilder_1.default(product_model_1.default.find(baseFilter)
-        .populate('stock', 'quantity warehouse unit')
+        .populate({
+        path: 'stock',
+        select: 'quantity warehouse unit productName',
+        populate: {
+            path: 'warehouse',
+            select: 'name location',
+        },
+    })
         .populate('category', 'name')
         .populate('brand'), query)
         .search(['name', 'description', 'tags'])

@@ -26,7 +26,7 @@ const createProductIntoDBService = async (
   const [stockExists, categoryExists, brandExists] = await Promise.all([
     Stock.findOne({ _id: payload.stock, isDeleted: { $ne: true } }),
     Category.findOne({ _id: payload.category, isDeleted: { $ne: true } }),
-    Brand.findOne({_id: payload.brand, isDeleted: {$ne: true}})
+    Brand.findOne({ _id: payload.brand, isDeleted: { $ne: true } }),
   ]);
 
   if (!stockExists) {
@@ -37,11 +37,9 @@ const createProductIntoDBService = async (
     throw new AppError(httpStatus.NOT_FOUND, 'Referenced category not found');
   }
 
-
   if (!brandExists) {
     throw new AppError(httpStatus.NOT_FOUND, 'Referenced brand not found');
   }
-
 
   // Validate discount price
   if (payload.discountPrice && payload.discountPrice > payload.price) {
@@ -81,9 +79,8 @@ const createProductIntoDBService = async (
 // Get all products (with filters)
 const getAllProductsFromDBService = async (
   query: Record<string, unknown>,
-  options?: { onlyPublished?: boolean }
+  options?: { onlyPublished?: boolean },
 ) => {
- 
   const baseFilter: any = {
     isDeleted: { $ne: true },
   };
@@ -95,7 +92,14 @@ const getAllProductsFromDBService = async (
 
   const productQuery = new QueryBuilder(
     Product.find(baseFilter)
-      .populate('stock', 'quantity warehouse unit')
+      .populate({
+        path: 'stock',
+        select: 'quantity warehouse unit productName',
+        populate: {
+          path: 'warehouse',
+          select: 'name location',
+        },
+      })
       .populate('category', 'name')
       .populate('brand'),
     query,
@@ -127,7 +131,6 @@ const getAllProductsFromDBService = async (
   };
 };
 
-
 // Get single product by ID
 const getSingleProductFromDBService = async (id: string) => {
   if (!Types.ObjectId.isValid(id)) {
@@ -140,7 +143,7 @@ const getSingleProductFromDBService = async (id: string) => {
   )
     .populate('stock', 'quantity warehouse unit')
     .populate('category', 'name')
-     .populate('brand');
+    .populate('brand');
 
   if (!result) {
     throw new AppError(httpStatus.NOT_FOUND, 'Product not found');
@@ -168,7 +171,6 @@ const updateSingleProductInDBService = async (
 
   // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
   const { isDeleted, removedImages, ...updateData } = payload;
-
 
   const imageIdsToRemove = (removedImages ?? [])
     .map((image) =>
@@ -203,14 +205,14 @@ const updateSingleProductInDBService = async (
   }
 
   // Brand Validation
-  if(updateData.brand){
+  if (updateData.brand) {
     const brandExists = await Brand.findOne({
       _id: updateData.brand,
-      isDeleted: {$ne: true},
-    })
+      isDeleted: { $ne: true },
+    });
 
-    if(!brandExists){
-      throw new AppError(httpStatus.NOT_FOUND, 'Referenced Brand not found')
+    if (!brandExists) {
+      throw new AppError(httpStatus.NOT_FOUND, 'Referenced Brand not found');
     }
   }
 
@@ -245,7 +247,6 @@ const updateSingleProductInDBService = async (
       (img: any) => !imageIdsToRemove.includes(img.public_id),
     );
   }
-
 
   // UPLOAD NEW IMAGES
   if (files?.length) {

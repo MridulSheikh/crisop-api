@@ -16,94 +16,126 @@ exports.handleCategoryBrowseByChatBot = exports.getProductDetailsByChatBot = exp
 const QueryBuilder_1 = __importDefault(require("../../builder/QueryBuilder"));
 const category_service_1 = require("../category/category.service");
 const product_model_1 = __importDefault(require("../product/product.model"));
+const product_service_1 = require("../product/product.service");
 // ======================================================
 // PRODUCT SEARCH
 // ======================================================
 const handleProductSearchByChatBot = (analysis) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b, _c, _d, _e;
-    const categoryId = yield (0, category_service_1.getCategoryIdByNameServices)(analysis.category);
-    const baseFilter = {
-        name: {
-            $regex: analysis.searchQuery,
-            $options: "i",
-        },
-    };
-    // category filter
-    if (categoryId) {
-        baseFilter.category = categoryId;
+    var _a, _b, _c, _d;
+    const isCategoryBrowse = analysis.intent === "category_browse";
+    const isDetail = analysis.intent === "product_detail";
+    // =========================
+    // 🧠 PRODUCT DETAIL
+    // =========================
+    if (isDetail) {
+        return Object.assign({ type: "product_detail", message: `Searching product details for "${analysis.searchQuery}"` }, (yield (0, product_service_1.atlasProductSearchService)(analysis.searchQuery, {
+            limit: 1,
+        })));
     }
-    // budget filter
-    if (((_a = analysis.budget) === null || _a === void 0 ? void 0 : _a.max) ||
-        ((_b = analysis.budget) === null || _b === void 0 ? void 0 : _b.min)) {
-        baseFilter.price = {};
-        if ((_c = analysis.budget) === null || _c === void 0 ? void 0 : _c.min) {
-            baseFilter.price.$gte =
-                analysis.budget.min;
-        }
-        if ((_d = analysis.budget) === null || _d === void 0 ? void 0 : _d.max) {
-            baseFilter.price.$lte =
-                analysis.budget.max;
-        }
+    // =========================
+    // 🛒 CATEGORY BROWSE
+    // =========================
+    if (isCategoryBrowse) {
+        const result = yield (0, product_service_1.atlasProductSearchService)("", {
+            category: analysis.category,
+            page: analysis.page,
+            limit: 10,
+            minPrice: (_a = analysis.budget) === null || _a === void 0 ? void 0 : _a.min,
+            maxPrice: (_b = analysis.budget) === null || _b === void 0 ? void 0 : _b.max,
+        });
+        return Object.assign({ type: "category", message: `Browsing category 🛒` }, result);
     }
-    const productQuery = new QueryBuilder_1.default(product_model_1.default.find(baseFilter)
-        .populate("stock", "quantity")
-        .populate("category", "name"), {})
-        .search(["name", "description", "tags"])
-        .filter()
-        .fields()
-        .sort();
-    const products = yield productQuery.modelQuery;
-    // no products
-    if (!products.length) {
+    // =========================
+    // 🔍 DEFAULT PRODUCT SEARCH
+    // =========================
+    const result = yield (0, product_service_1.atlasProductSearchService)(analysis.searchQuery, {
+        page: analysis.page,
+        limit: 10,
+        category: analysis.category !== "other"
+            ? analysis.category
+            : undefined,
+        brand: analysis.brand !== "other"
+            ? analysis.brand
+            : undefined,
+        minPrice: (_c = analysis.budget) === null || _c === void 0 ? void 0 : _c.min,
+        maxPrice: (_d = analysis.budget) === null || _d === void 0 ? void 0 : _d.max,
+    });
+    if (!result.data.length) {
         return {
             type: "text",
-            message: `Sorry 😔 I couldn't find any products for "${analysis.searchQuery}". Try searching with different keywords.`,
+            message: `Sorry 😔 I couldn't find any products for "${analysis.searchQuery}".`,
             products: [],
         };
     }
-    // build response message
-    const message = `
-I found ${products.length} ${analysis.category || ""} product${products.length > 1 ? "s" : ""} for you 🛒
-
-${((_e = analysis.budget) === null || _e === void 0 ? void 0 : _e.max)
-        ? `Showing products within your budget of ${analysis.budget.max} BDT.\n`
-        : ""}
-
-Here are some recommended options based on your search.
-`;
-    return {
-        type: "products",
-        message,
-        products,
-    };
+    return Object.assign({ type: "products", message: `Found ${result.meta.total} products 🛒` }, result);
 });
 exports.handleProductSearchByChatBot = handleProductSearchByChatBot;
 // ======================================================
 // PRODUCT DETAILS
 // ======================================================
 const getProductDetailsByChatBot = (analysis) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a, _b;
-    const product = yield product_model_1.default.findOne({
-        name: {
-            $regex: analysis.searchQuery,
-            $options: "i",
-        },
-    })
-        .populate("category", "name")
-        .populate("stock", "quantity warehouse unit");
-    // not found
+    var _a, _b, _c;
+    const searchTerm = (_a = analysis.searchQuery) === null || _a === void 0 ? void 0 : _a.trim();
+    let product = null;
+    // =========================
+    // 🔍 ATLAS SEARCH (FAST)
+    // =========================
+    if (searchTerm) {
+        const result = yield product_model_1.default.aggregate([
+            {
+                $search: {
+                    index: "product_search_index",
+                    text: {
+                        query: searchTerm,
+                        path: "name",
+                        fuzzy: { maxEdits: 1 },
+                    },
+                },
+            },
+            {
+                $limit: 1,
+            },
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "category",
+                },
+            },
+            { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
+            {
+                $lookup: {
+                    from: "stocks",
+                    localField: "stock",
+                    foreignField: "_id",
+                    as: "stock",
+                },
+            },
+            { $unwind: { path: "$stock", preserveNullAndEmptyArrays: true } },
+        ]);
+        product = result[0];
+    }
+    // =========================
+    // ❌ NOT FOUND
+    // =========================
     if (!product) {
         return {
             type: "text",
-            message: `Sorry 😔 I couldn't find any product named "${analysis.searchQuery}".`,
+            message: `Sorry 😔 I couldn't find any product named "${searchTerm}".`,
         };
     }
-    const stock = ((_a = product === null || product === void 0 ? void 0 : product.stock) === null || _a === void 0 ? void 0 : _a.quantity) || 0;
-    const category = ((_b = product === null || product === void 0 ? void 0 : product.category) === null || _b === void 0 ? void 0 : _b.name) ||
-        "Unknown";
+    // =========================
+    // 📦 STOCK
+    // =========================
+    const stock = ((_b = product === null || product === void 0 ? void 0 : product.stock) === null || _b === void 0 ? void 0 : _b.quantity) || 0;
+    const category = ((_c = product === null || product === void 0 ? void 0 : product.category) === null || _c === void 0 ? void 0 : _c.name) || "Unknown";
     const stockText = stock > 0
         ? `✅ In Stock (${stock} available)`
         : "❌ Out of Stock";
+    // =========================
+    // 🚀 RESPONSE
+    // =========================
     return {
         type: "product_detail",
         message: `
@@ -113,9 +145,8 @@ const getProductDetailsByChatBot = (analysis) => __awaiter(void 0, void 0, void 
 📂 Category: ${category}
 📦 ${stockText}
 
-${analysis.recommendationHint ||
-            "This product is available in our store."}
-      `,
+${analysis.recommendationHint || "This product is available in our store."}
+    `,
         products: [product],
     };
 });

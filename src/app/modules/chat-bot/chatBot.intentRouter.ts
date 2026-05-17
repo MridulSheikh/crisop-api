@@ -36,7 +36,6 @@ export const handleGeneralResponse = async (
 
 export const intentRouter = async (analysis: AIAnalysisResponse) => {
   const handler = intentHandlers[analysis.intent as keyof typeof intentHandlers];
-
   if (!handler) {
     return handleGeneralResponse(analysis);
   }

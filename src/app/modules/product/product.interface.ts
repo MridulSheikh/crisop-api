@@ -19,3 +19,13 @@ export interface IProductInterface extends Document {
     isDeleted: boolean;
     isPublished: boolean;
 }
+
+
+export type TSearchOptions = {
+  page?: string | number;
+  limit?: string | number;
+  category?: string;
+  brand?: string;
+  minPrice?: string;
+  maxPrice?: string;
+};

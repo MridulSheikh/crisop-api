@@ -1,94 +1,81 @@
 import QueryBuilder from "../../builder/QueryBuilder";
 import { getCategoryIdByNameServices } from "../category/category.service";
 import Product from "../product/product.model";
+import { atlasProductSearchService } from "../product/product.service";
 
 // ======================================================
 // PRODUCT SEARCH
 // ======================================================
 
-export const handleProductSearchByChatBot = async (
-  analysis: any
-) => {
-  const categoryId =
-    await getCategoryIdByNameServices(
-      analysis.category
-    );
+export const handleProductSearchByChatBot = async (analysis: any) => {
+  const isCategoryBrowse = analysis.intent === "category_browse";
+  const isDetail = analysis.intent === "product_detail";
 
-  const baseFilter: any = {
-    name: {
-      $regex: analysis.searchQuery,
-      $options: "i",
-    },
-  };
-
-  // category filter
-  if (categoryId) {
-    baseFilter.category = categoryId;
+  // =========================
+  // 🧠 PRODUCT DETAIL
+  // =========================
+  if (isDetail) {
+    return {
+      type: "product_detail",
+      message: `Searching product details for "${analysis.searchQuery}"`,
+      ...(await atlasProductSearchService(analysis.searchQuery, {
+        limit: 1,
+      })),
+    };
   }
 
-  // budget filter
-  if (
-    analysis.budget?.max ||
-    analysis.budget?.min
-  ) {
-    baseFilter.price = {};
+  // =========================
+  // 🛒 CATEGORY BROWSE
+  // =========================
+  if (isCategoryBrowse) {
+    const result = await atlasProductSearchService("", {
+      category: analysis.category,
+      page: analysis.page,
+      limit: 10,
+      minPrice: analysis.budget?.min,
+      maxPrice: analysis.budget?.max,
+    });
 
-    if (analysis.budget?.min) {
-      baseFilter.price.$gte =
-        analysis.budget.min;
-    }
-
-    if (analysis.budget?.max) {
-      baseFilter.price.$lte =
-        analysis.budget.max;
-    }
+    return {
+      type: "category",
+      message: `Browsing category 🛒`,
+      ...result,
+    };
   }
 
-  const productQuery = new QueryBuilder(
-    Product.find(baseFilter)
-      .populate("stock", "quantity")
-      .populate("category", "name"),
-    {}
-  )
-    .search(["name", "description", "tags"])
-    .filter()
-    .fields()
-    .sort();
+  // =========================
+  // 🔍 DEFAULT PRODUCT SEARCH
+  // =========================
+  const result = await atlasProductSearchService(
+    analysis.searchQuery,
+    {
+      page: analysis.page,
+      limit: 10,
+      category:
+        analysis.category !== "other"
+          ? analysis.category
+          : undefined,
+      brand:
+        analysis.brand !== "other"
+          ? analysis.brand
+          : undefined,
+      minPrice: analysis.budget?.min,
+      maxPrice: analysis.budget?.max,
+    }
+  );
 
-  const products = await productQuery.modelQuery;
-
-  // no products
-  if (!products.length) {
+  if (!result.data.length) {
     return {
       type: "text",
-
-      message: `Sorry 😔 I couldn't find any products for "${analysis.searchQuery}". Try searching with different keywords.`,
-
+      message: `Sorry 😔 I couldn't find any products for "${analysis.searchQuery}".`,
       products: [],
     };
   }
 
-  // build response message
-  const message = `
-I found ${products.length} ${
-    analysis.category || ""
-  } product${
-    products.length > 1 ? "s" : ""
-  } for you 🛒
-
-${
-  analysis.budget?.max
-    ? `Showing products within your budget of ${analysis.budget.max} BDT.\n`
-    : ""
-}
-
-Here are some recommended options based on your search.
-`;
-
   return {
     type: "products",
-    message,
-    products,
+    message: `Found ${result.meta.total} products 🛒`,
+    ...result,
   };
 };
 
@@ -96,60 +83,93 @@ Here are some recommended options based on your search.
 // PRODUCT DETAILS
 // ======================================================
 
-export const getProductDetailsByChatBot =
-  async (analysis: any) => {
-    const product = await Product.findOne({
-      name: {
-        $regex: analysis.searchQuery,
-        $options: "i",
+export const getProductDetailsByChatBot = async (analysis: any) => {
+  const searchTerm = analysis.searchQuery?.trim();
+
+  let product: any = null;
+
+  // =========================
+  // 🔍 ATLAS SEARCH (FAST)
+  // =========================
+  if (searchTerm) {
+    const result = await Product.aggregate([
+      {
+        $search: {
+          index: "product_search_index",
+          text: {
+            query: searchTerm,
+            path: "name",
+            fuzzy: { maxEdits: 1 },
+          },
+        },
       },
-    })
-      .populate("category", "name")
-      .populate(
-        "stock",
-        "quantity warehouse unit"
-      );
+      {
+        $limit: 1,
+      },
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "category",
+        },
+      },
+      { $unwind: { path: "$category", preserveNullAndEmptyArrays: true } },
 
-    // not found
-    if (!product) {
-      return {
-        type: "text",
+      {
+        $lookup: {
+          from: "stocks",
+          localField: "stock",
+          foreignField: "_id",
+          as: "stock",
+        },
+      },
+      { $unwind: { path: "$stock", preserveNullAndEmptyArrays: true } },
+    ]);
 
-        message: `Sorry 😔 I couldn't find any product named "${analysis.searchQuery}".`,
-      };
-    }
+    product = result[0];
+  }
 
-    const stock =
-      (product as any)?.stock?.quantity || 0;
-
-    const category =
-      (product as any)?.category?.name ||
-      "Unknown";
-
-    const stockText =
-      stock > 0
-        ? `✅ In Stock (${stock} available)`
-        : "❌ Out of Stock";
-
+  // =========================
+  // ❌ NOT FOUND
+  // =========================
+  if (!product) {
     return {
-      type: "product_detail",
+      type: "text",
+      message: `Sorry 😔 I couldn't find any product named "${searchTerm}".`,
+    };
+  }
 
-      message: `
+  // =========================
+  // 📦 STOCK
+  // =========================
+  const stock = product?.stock?.quantity || 0;
+  const category = product?.category?.name || "Unknown";
+
+  const stockText =
+    stock > 0
+      ? `✅ In Stock (${stock} available)`
+      : "❌ Out of Stock";
+
+  // =========================
+  // 🚀 RESPONSE
+  // =========================
+  return {
+    type: "product_detail",
+
+    message: `
 🐟 ${product.name}
 
 💰 Price: ${product.price} BDT
 📂 Category: ${category}
 📦 ${stockText}
 
-${
-  analysis.recommendationHint ||
-  "This product is available in our store."
-}
-      `,
+${analysis.recommendationHint || "This product is available in our store."}
+    `,
 
-      products: [product],
-    };
+    products: [product],
   };
+};
 
 // ======================================================
 // CATEGORY BROWSE

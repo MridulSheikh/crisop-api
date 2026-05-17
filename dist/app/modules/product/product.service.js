@@ -23,7 +23,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.toggleFeaturedStatusService = exports.removeSingleProductFromDBService = exports.updateSingleProductInDBService = exports.getSingleProductFromDBService = exports.getAllProductsFromDBService = exports.createProductIntoDBService = void 0;
+exports.atlasProductSearchService = exports.toggleFeaturedStatusService = exports.removeSingleProductFromDBService = exports.updateSingleProductInDBService = exports.getSingleProductFromDBService = exports.getAllProductsFromDBService = exports.createProductIntoDBService = void 0;
 const http_status_1 = __importDefault(require("http-status"));
 const AppError_1 = __importDefault(require("../../errors/AppError"));
 const product_model_1 = __importDefault(require("./product.model"));
@@ -35,6 +35,7 @@ const fs_1 = __importDefault(require("fs"));
 const sendImageToCloudinary_1 = require("../../utils/sendImageToCloudinary");
 const cloudinary_1 = require("cloudinary");
 const brand_model_1 = __importDefault(require("../brand/brand.model"));
+const parseIds_1 = require("../../helpers/parseIds");
 // Create new product
 const createProductIntoDBService = (payload, 
 // eslint-disable-next-line no-undef
@@ -264,3 +265,172 @@ const toggleFeaturedStatusService = (id) => __awaiter(void 0, void 0, void 0, fu
     };
 });
 exports.toggleFeaturedStatusService = toggleFeaturedStatusService;
+const atlasProductSearchService = (query, options) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
+    const searchTerm = typeof query === 'string' ? query.trim() : '';
+    // pagination
+    const page = Math.max(1, Number(options === null || options === void 0 ? void 0 : options.page) || 1);
+    const limit = Math.max(1, Number(options === null || options === void 0 ? void 0 : options.limit) || 10);
+    const skip = (page - 1) * limit;
+    const brandIds = (0, parseIds_1.parseIds)(options === null || options === void 0 ? void 0 : options.brand);
+    const categoryIds = (0, parseIds_1.parseIds)(options === null || options === void 0 ? void 0 : options.category);
+    const minPrice = Number(options === null || options === void 0 ? void 0 : options.minPrice);
+    const maxPrice = Number(options === null || options === void 0 ? void 0 : options.maxPrice);
+    const pipeline = [];
+    // ======================
+    // 🔍 SEARCH STAGE
+    // ======================
+    if (searchTerm) {
+        pipeline.push({
+            $search: {
+                index: 'product_search_index',
+                text: {
+                    query: searchTerm,
+                    path: ['name', 'description', 'tags'],
+                    fuzzy: { maxEdits: 1 },
+                },
+            },
+        });
+    }
+    // ======================
+    // 📦 LOOKUP (populate)
+    // ======================
+    pipeline.push({
+        $lookup: {
+            from: 'brands',
+            localField: 'brand',
+            foreignField: '_id',
+            as: 'brand',
+        },
+    }, {
+        $unwind: {
+            path: '$brand',
+            preserveNullAndEmptyArrays: true,
+        },
+    }, {
+        $lookup: {
+            from: 'categories',
+            localField: 'category',
+            foreignField: '_id',
+            as: 'category',
+        },
+    }, {
+        $unwind: {
+            path: '$category',
+            preserveNullAndEmptyArrays: true,
+        },
+    });
+    // ======================
+    // 🎯 FILTER STAGE
+    // ======================
+    const matchStage = {
+        isDeleted: { $ne: true },
+    };
+    if (brandIds.length) {
+        matchStage['brand._id'] = { $in: brandIds };
+    }
+    if (categoryIds.length) {
+        matchStage['category._id'] = { $in: categoryIds };
+    }
+    // price filter
+    if (!isNaN(minPrice) || !isNaN(maxPrice)) {
+        matchStage.price = {};
+        if (!isNaN(minPrice)) {
+            matchStage.price.$gte = minPrice;
+        }
+        if (!isNaN(maxPrice)) {
+            matchStage.price.$lte = maxPrice;
+        }
+    }
+    pipeline.push({
+        $match: matchStage,
+    });
+    // ======================
+    // 📊 RANKING
+    // ======================
+    if (searchTerm) {
+        pipeline.push({
+            $addFields: {
+                score: { $meta: 'searchScore' },
+            },
+        });
+        pipeline.push({
+            $sort: {
+                score: -1,
+                createdAt: -1,
+            },
+        });
+    }
+    else {
+        pipeline.push({
+            $sort: {
+                createdAt: -1,
+            },
+        });
+    }
+    // ======================
+    // 📄 PAGINATION
+    // ======================
+    pipeline.push({ $skip: skip }, { $limit: limit });
+    // ======================
+    // 🚀 DATA
+    // ======================
+    const data = yield product_model_1.default.aggregate(pipeline);
+    // ======================
+    // 📊 TOTAL COUNT
+    // ======================
+    const countPipeline = [];
+    if (searchTerm) {
+        countPipeline.push({
+            $search: {
+                index: 'product_search_index',
+                text: {
+                    query: searchTerm,
+                    path: ['name', 'description', 'tags'],
+                    fuzzy: { maxEdits: 1 },
+                },
+            },
+        });
+    }
+    countPipeline.push({
+        $lookup: {
+            from: 'brands',
+            localField: 'brand',
+            foreignField: '_id',
+            as: 'brand',
+        },
+    }, {
+        $unwind: {
+            path: '$brand',
+            preserveNullAndEmptyArrays: true,
+        },
+    }, {
+        $lookup: {
+            from: 'categories',
+            localField: 'category',
+            foreignField: '_id',
+            as: 'category',
+        },
+    }, {
+        $unwind: {
+            path: '$category',
+            preserveNullAndEmptyArrays: true,
+        },
+    }, {
+        $match: Object.assign(Object.assign({ isDeleted: { $ne: true } }, (brandIds.length && { brand: { $in: brandIds } })), (categoryIds.length && { category: { $in: categoryIds } })),
+    }, {
+        $count: 'total',
+    });
+    const totalAgg = yield product_model_1.default.aggregate(countPipeline);
+    const total = ((_a = totalAgg[0]) === null || _a === void 0 ? void 0 : _a.total) || 0;
+    return {
+        meta: {
+            total,
+            page,
+            limit,
+            totalPages: Math.ceil(total / limit),
+        },
+        data,
+    };
+});
+exports.atlasProductSearchService = atlasProductSearchService;

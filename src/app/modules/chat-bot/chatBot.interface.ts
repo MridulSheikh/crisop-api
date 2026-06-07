@@ -40,6 +40,9 @@ export interface AIAnalysisResponse {
   // 🛒 Category
   category: string;
 
+  // 🏷 Brand
+  brand?: string;
+
   // 📝 Short explanation
   summary: string;
 

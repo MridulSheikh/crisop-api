@@ -21,10 +21,33 @@ const messageSchema = new Schema(
     analysis: {
       intent: { type: String, default: null },
       category: { type: String, default: null },
+      brand: { type: String, default: null },
       searchQuery: { type: String, default: null },
       summary: { type: String, default: null },
+      recommendationHint: { type: String, default: null },
+      budget: {
+        min: { type: Number, default: null },
+        max: { type: Number, default: null },
+      },
+      isSingleProductQuery: { type: Boolean, default: false },
       suggestions: {
         type: [String],
+        default: [],
+      },
+    },
+
+    rag: {
+      sources: {
+        type: [
+          {
+            id: { type: String, required: true },
+            type: { type: String, required: true },
+            title: { type: String, required: true },
+            content: { type: String, required: true },
+            score: { type: Number, default: 0 },
+            metadata: { type: Schema.Types.Mixed, default: {} },
+          },
+        ],
         default: [],
       },
     },

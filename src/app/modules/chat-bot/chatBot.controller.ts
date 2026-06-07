@@ -6,6 +6,14 @@ import httpStatus from "http-status";
 
 export const analyzeMessageContorller = catchAsync(async(req: Request, res: Response)=>{
       const {message, id} = req.body
+      if (!message || typeof message !== "string" || !message.trim()) {
+        return sendResponse(res,{
+          statusCode: httpStatus.BAD_REQUEST,
+          success: false,
+          message: "Message is required",
+          data: null
+        })
+      }
       const result = await chatService(message, id);
       sendResponse(res,{
         statusCode: httpStatus.OK,

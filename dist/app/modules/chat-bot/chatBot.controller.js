@@ -19,6 +19,14 @@ const sendResponse_1 = __importDefault(require("../../utils/sendResponse"));
 const http_status_1 = __importDefault(require("http-status"));
 exports.analyzeMessageContorller = (0, catchAsync_1.default)((req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { message, id } = req.body;
+    if (!message || typeof message !== "string" || !message.trim()) {
+        return (0, sendResponse_1.default)(res, {
+            statusCode: http_status_1.default.BAD_REQUEST,
+            success: false,
+            message: "Message is required",
+            data: null
+        });
+    }
     const result = yield (0, chatBot_service_1.chatService)(message, id);
     (0, sendResponse_1.default)(res, {
         statusCode: http_status_1.default.OK,

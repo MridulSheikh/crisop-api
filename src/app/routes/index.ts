@@ -7,8 +7,8 @@ import productRoute from "../modules/product/product.route"
 import stockRoute from "../modules/stock/stock.route"
 import orderRoute from '../modules/order/order.route'
 import paymentRoute from "../modules/payment/payment.route"
-import chatBotRoute from "../modules/chat-bot/chatBot.route"
 import brandRoute from '../modules/brand/brand.route'
+import aiChatRoute from "../modules/aiChatbot/chat.route"
 
 const router = Router();
 
@@ -50,8 +50,8 @@ const modulesRutes = [
     route: paymentRoute
   },
   {
-    path: '/chatBot',
-    route: chatBotRoute
+    path: "/chat",
+    route: aiChatRoute
   }
 ];
 
